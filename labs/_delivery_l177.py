@@ -45,7 +45,7 @@ with sync_playwright() as pw:
   host.screenshot(path=f'/tmp/l177-explorer-{width}.png')
   pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled();assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=outer]').click();pred.locator('.predict-reveal').click();assert 'double-counts' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===3&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l177-top-{width}.png')
@@ -77,6 +77,7 @@ for path in [R/'lessons'/(S+'.html'),R/'reference/compute-budget-realism.html']:
 paths=[R/'lessons'/(S+'.html'),R/'reference/compute-budget-realism.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l177/report.md',R/'assets/l177-evidence.js']+sorted((P/'figures/l177').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l177.py','_build_l177.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_verdict_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=3,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l177_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

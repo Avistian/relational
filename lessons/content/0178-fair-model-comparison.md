@@ -40,6 +40,12 @@ The next check failed. The released RelGNN row encoder received 58 earlier resul
 
 A scalar trace explains why. Let a missing value be `x = NaN` and compute `z = w × x`. Replacing the resulting `z` with zero makes the forward output finite. In the backward calculation, the masked branch contributes `0 × NaN` to the weight gradient, which is still NaN. The source applies its fallback after the affine operation. The independent check reproduces the failure using both arithmetic and the original numerical encoder.
 
+**Trace the operation order.** Use one scalar weight `w=2` and loss `output²`. The two paths produce the same forward value for a missing input, but different weight gradients:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Path</th><th>Forward output</th><th>Gradient of w</th></tr></thead><tbody><tr><td>Multiply NaN, then replace output with 0</td><td>0</td><td>NaN</td></tr><tr><td>Replace input with 0, then multiply</td><td>0</td><td>0</td></tr></tbody></table>
+
+The first multiplication remains in the backward graph even when the forward replacement hides its result. **Transfer check:** for an observed input `x=3`, both paths return 6 and have gradient `2 × 6 × 3 = 36`. A check using only observed values would miss the failure. Zero imputation here is a diagnostic control, not a validated replacement policy for the complete model.
+
 Imputing before that operation gives finite gradients in a **diagnostic control**. It does not prove that a repaired full GNN trains well or preserves the published behavior. We keep the approved stop: no six-fit tuning grid, no fresh ICL model evaluations, no invented winner. The local probe uses CPU Torch 2.13.0 and pinned PyTorch Frame 0.2.3; the historical CUDA runtime was not run. [Original encoder](../labs/sources/l178/relgnn/examples__relgnn_nn.py), [actual probe](../labs/_gradient_preflight_l178.py), [independent check](../labs/evidence/l178/gradient-independent.json).
 
 ## 4 · What the completed replay establishes

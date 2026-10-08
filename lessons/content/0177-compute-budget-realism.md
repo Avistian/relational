@@ -24,7 +24,7 @@ For L176, the worker body took **491.471 seconds** on one L4. Within it, the 300
 
 [[FIG:accounting]]
 
-The posted resource-rate calculation is:
+The **2026-10-02 pricing snapshot** gives this resource-rate calculation:
 
 ```text
 L4 + 2 physical CPU cores + 16 GiB host RAM
@@ -70,9 +70,15 @@ For a baseline session, work through the complete saved ledger, implement one co
 
 ## 5 · Some plans must stop
 
-[RT v1 §4.1](https://arxiv.org/html/2510.06377v1#S4.SS1) reports approximately two hours of pretraining or 1.5 hours of fine-tuning on eight A100s per run. That is **16 or 12 GPU-hours**. At the checked A100 40 GB base rate, a hypothetical rental costs **$33.58 or $25.19 for GPUs alone**; the 80 GB scenario is $39.97 or $29.98. These are source-based price scenarios, not measured bills or a promise that either variant reproduces the runtime. Even the cheaper scenario exceeds our $10 cap before CPU, memory, preparation, seeds or retries. Full runs remain **NOT_RUN**.
+[RT v1 §4.1](https://arxiv.org/html/2510.06377v1#S4.SS1) reports approximately two hours of pretraining or 1.5 hours of fine-tuning on eight A100s per run. That is **16 or 12 GPU-hours**. At the 2026-10-02 A100 40 GB base rate, a hypothetical rental costs **$33.58 or $25.19 for GPUs alone**; the 80 GB scenario is $39.97 or $29.98. These are source-based price scenarios, not measured bills or a promise that either variant reproduces the runtime. Even the cheaper scenario exceeds our $10 cap before CPU, memory, preparation, seeds or retries. Full runs remain **NOT_RUN**.
 
 Money is not the only stop condition. L175 reserved **$3.172199** across its three CPU audit attempts plus overhead/build allowances; one attempt has no worker-time receipt. Its temporal gate failed, so GPU inference remained **NOT_RUN**. A larger budget or longer session cannot repair that scientific failure.
+
+**Run the admission decision by hand.** Consider an invented $5 reservation, 40 minutes of machine work and 10 minutes of active preparation, scheduled serially in a one-hour session. Suppose the plan declares 12 GiB required on a 24 GiB device and uses an $8 spending stop:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Change from plan</th><th>Decision</th><th>Reason</th></tr></thead><tbody><tr><td>None</td><td>Feasible scenario</td><td>50 minutes; declared limits fit</td></tr><tr><td>Required memory unknown</td><td>Incomplete measurement</td><td>Affordability cannot fill the gap</td></tr><tr><td>Preparation takes 25 minutes</td><td>Exceeds session</td><td>40 + 25 = 65 minutes</td></tr><tr><td>Temporal audit fails</td><td>Scientific stop</td><td>Runtime and money are irrelevant to this failure</td></tr></tbody></table>
+
+These are assumed planning inputs, not measured future guarantees. **Transfer check:** give the failed-audit plan three hours and a $100 limit. Its status remains SCIENTIFIC_STOP. Resolve the scientific contract before spending the larger allowance.
 
 ## Lab · Rebuild the complete feasibility ledger
 

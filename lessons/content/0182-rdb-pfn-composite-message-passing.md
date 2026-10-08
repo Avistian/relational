@@ -69,6 +69,12 @@ For general vectors, fusion is `z_j = W_source h_source(j) + W_bridge h_bridge(j
 
 Permuting the two legal rows leaves the output unchanged. Changing a future purchase dated 11 also leaves it unchanged because the row is filtered out first. Duplicating the first legal message changes the result to [1.5035, 1.0000]. Softmax is invariant to order, not to duplicating just one member. Adding another route's [8, 0] vector into the same normalization changes the result to [7.8670, 0.0210]. This deliberately violates route separation.
 
+**Preserving rows is different from preserving their relationships.** Swap which product each of the two legal purchase rows references, keeping the same source and bridge vectors. This is a foreign-key intervention, not a reordering of intact records:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Pairing</th><th>Fused messages</th><th>Attention output</th></tr></thead><tbody><tr><td>Original</td><td>[1,1]; [2,1]</td><td>[1.6698, 1.0000]</td></tr><tr><td>Product links swapped</td><td>[0,2]; [3,0]</td><td>[2.6789, 0.2141]</td></tr></tbody></table>
+
+Both sets have arithmetic mean `[1.5,1]`, but their query-dependent attention outputs differ. The joint source–bridge pairing matters even when separate averages are unchanged. **Transfer check:** reverse the order of both intact fused messages and their destination indices. The original attention output must stay unchanged. Swapping only the product links changes the database; permuting intact records changes its storage order.
+
 That last result is **not proof that every ordinary GNN destroys useful information**. Another message-passing architecture might preserve roles. The experiment explains why role mixing is worth controlling, rather than proving a universal expressive advantage.
 
 ## 5 · Establish the published result before proposing its extension

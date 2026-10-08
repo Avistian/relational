@@ -179,3 +179,17 @@ L174: Added two-step adapter-gradient trace with half-learning-rate transfer. Al
 L175: Added actual six-hour future-cell witness and date-truncation counterexample. All 2,106 saved contexts and 2,156,544 slots independently audited; inference remains blocked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
 
 L176: Added changing support statistics with unchanged-query encoding trace. Both full published and nested saved prediction populations checked; 1,024 nested draws independently regenerated. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L177: Added independent memory, budget, time and scientific admission scenarios. All 300 inference receipts, 18 fits, three attempts and 400 randomized cost cases checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L178: Added impute-before versus impute-after multiplication gradient trace. Original source encoder freshly reproduces 256 nonfinite gradients; all 12,679 raw labels and 21,060 saved predictions checked. Full training remains blocked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L180: Added fit/review/exit state trace. Full 2,106 contexts, 2,156,544 slots, 26,080 raw results and cost ledger checked; actual entry point still refuses inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L181: Added zero fallback versus global mean baseline counterexample with negative R-squared. Full 25,010 SQL labels, 68,925 predictions and 40 paper target cells checked; original missing-input encoder gradient failure reproduced. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L182: Added foreign-key pairing intervention with identical pooled mean but different attention. Original source attention/gradients, both checkpoint parity fixtures and all 21,060 saved predictions checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L183: Added positive interaction despite harmful pretraining in both backbones, with equal-benefit transfer. Independent SQL joins and MAE on all 7,554 saved predictions, 3,000 temporal cases and rejected mutants checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L179: No lesson/content/notebook exists in the repository; retained explicit transition from L178 to L180. No newly authored replacement is claimed.

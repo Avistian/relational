@@ -32,7 +32,7 @@ def prose(portable=False):
  return s
 
 def doc(title,body,interactive=False):
- html=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ html=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  css=['lesson','atomic-route','checkpoint','lab-access','compute-budget'];scripts=['retrieval-pool','retrieval-bank','predict','teachback','compute-budget','l177-evidence','l177-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in css)+'</head><body class="checkpoint"><article><nav><a href="../index.html">Course</a> · <a href="../lessons/0176-few-shot-icl-evaluation.html">Lesson 176</a></nav><header><p class="route-kicker">Year 5 · Quarter 2 · Lesson 177</p><h1>'+title+'</h1></header>'+html+'</article>'+''.join('<script src="../assets/'+x+'.js"></script>' for x in scripts)+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Compute budget realism',prose(),True))
@@ -119,9 +119,10 @@ print('Independent SQL: 300 evaluations; inner seconds',inner,'distinct load sec
 for solution in [False,True]:
  book=make(solution);path=P/('solutions' if solution else '')/(S+'.ipynb')
  if solution and path.exists():
-  prior=nb.read(path,4)
-  if [c.source for c in prior.cells if c.cell_type=='code']==[c.source for c in book.cells if c.cell_type=='code']:
-   book.metadata=prior.metadata
-   for a,b in zip([c for c in book.cells if c.cell_type=='code'],[c for c in prior.cells if c.cell_type=='code']):a.outputs=b.outputs;a.execution_count=b.execution_count;a.metadata=b.metadata
+     old=nb.read(path,4);book.metadata=old.metadata
+     previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+     if [c.source for c in previous]==[c.source for c in current]:
+         for prior,c in zip(previous,current):
+             c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  nb.write(book,path)
 print('Built lesson, reference, interactive evidence and full portable notebooks')

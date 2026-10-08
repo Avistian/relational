@@ -43,7 +43,7 @@ with sync_playwright() as pw:
   host.screenshot(path=f'/tmp/l182-duplicate-{width}.png');host.locator('[data-reset]').click();host.screenshot(path=f'/tmp/l182-explorer-{width}.png')
   pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled();assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=change]').click();pred.locator('.predict-reveal').click();assert 'mass' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l182-top-{width}.png')
@@ -75,6 +75,7 @@ for path in [R/'lessons'/(S+'.html'),R/'reference/rdb-pfn-composite-message-pass
 paths=[R/'lessons'/(S+'.html'),R/'reference/rdb-pfn-composite-message-passing.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l182/report.md']+sorted((P/'figures/l182').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l182.py','_build_l182.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_arithmetic_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=4,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l182_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

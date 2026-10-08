@@ -45,7 +45,7 @@ with sync_playwright() as pw:
   host.locator('[data-reset]').click();host.screenshot(path=f'/tmp/l183-explorer-{width}.png')
   pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled();assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=gnn]').click();pred.locator('.predict-reveal').click();assert 'course GNN' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l183-top-{width}.png')
@@ -54,7 +54,7 @@ with sync_playwright() as pw:
    if width==375:fig.evaluate('(x)=>x.scrollLeft=x.scrollWidth');fig.screenshot(path=f'/tmp/l183-figure-{i}-{width}-end.png')
  page.emulate_media(media='print');assert host.locator('.fc-controls').evaluate('(x)=>getComputedStyle(x).display')=='none';page.screenshot(path='/tmp/l183-print.png')
  context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==1 and '7,554' in pg.locator('body').inner_text();assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
- page.emulate_media(media='screen');page.set_viewport_size({'width':1050,'height':900});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==5
+ page.emulate_media(media='screen');page.set_viewport_size({'width':1050,'height':900});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==6
  assert 'COMPLETE_SELECTED_SAVED_PREDICTION_REPLAY' in page.locator('body').inner_text();page.locator('img[src^="data:image/png"]').first.screenshot(path='/tmp/l183-notebook-figure.png');browser.close()
 assert not errors,errors
 class Quiet(SimpleHTTPRequestHandler):
@@ -79,9 +79,10 @@ for path in [R/'lessons'/(S+'.html'),R/'reference/graph-transformer-pretraining.
 paths=[R/'lessons'/(S+'.html'),R/'reference/graph-transformer-pretraining.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l183/report.md']+sorted((P/'figures/l183').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l183.py','_build_l183.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 for lane in ['relgt','griffin']:
  out=subprocess.run([str(R/'.venv/bin/python'),str(P/'_run_l183.py'),'--lane',lane,'--run'],capture_output=True,text=True)
  assert out.returncode!=0 and 'No training dispatched' in out.stderr
-result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',complete_model_trainer_appendices=6,portable_figures=5,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',full_protocol_admission='BOTH_REFUSE_TRAINING',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',complete_model_trainer_appendices=6,portable_figures=6,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',full_protocol_admission='BOTH_REFUSE_TRAINING',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l183_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

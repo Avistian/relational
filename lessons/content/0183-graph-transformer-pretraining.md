@@ -88,6 +88,12 @@ A **factorial experiment** varies two factors together. Here they are backbone (
 
 A positive interaction does not require the pretrained transformer to be the best model. It could improve more from a much worse starting point. Conversely, a transformer can win both comparisons while gaining exactly as much from pretraining as message passing. Keep the absolute scores alongside the contrast.
 
+**A positive interaction can coexist with negative transfer.** In this invented counterexample, lower MAE is better:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Backbone</th><th>Scratch</th><th>Pretrained</th><th>Gain</th></tr></thead><tbody><tr><td>Message passing</td><td>4.0</td><td>5.0</td><td>−1.0</td></tr><tr><td>Graph transformer</td><td>4.0</td><td>4.5</td><td>−0.5</td></tr></tbody></table>
+
+The interaction is `−0.5 − (−1.0) = +0.5`. Pretraining hurt both backbones; it merely hurt the transformer less. Report each gain before interpreting their difference. **Transfer check:** if both pretrained MAEs are instead 3.0, each gain is +1.0 and the interaction is zero. Useful pretraining does not require a nonzero interaction. The notebook requires at least two matched seed blocks; repeating these invented numbers tests the arithmetic, not uncertainty.
+
 ### A concrete probe brief, awaiting a separate execution protocol
 
 Use `rel-f1/driver-dnf` as a **single-database feasibility probe**, with 512 and 4,096 target labels, subset seeds 42–46, and all 566 validation / 702 test queries in the pinned Griffin release. Four arms × two label budgets × five seed blocks gives **40 target fits**. The pretrained arms require their own source-training runs; those costs cannot disappear from the budget.

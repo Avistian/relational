@@ -8,7 +8,7 @@
 
 [Lesson 173](0173-multi-task-pretraining.html) trained a small course encoder. [Lesson 174](0174-fine-tuning-protocol.html) compared adaptation policies on that encoder. Those runs teach parameter updates, but do not demonstrate loading and fine-tuning an externally released relational model. [Lesson 175](0175-zero-shot-evaluation.html) attempted public RT-v1 evaluation and stopped at a temporal gate. [Lesson 177](0177-compute-budget-realism.html) distinguished full costs from inner timers; [Lesson 178](0178-fair-model-comparison.html) showed why a finite forward pass does not prove finite gradients.
 
-The checkpoint joins these ideas: **public initialization → legal task inputs → actual updates → validation selection → independently checked predictions**. A failure anywhere prevents the practical exit. Lesson 179 is not yet present in this checkout; the retrieval below revisits the relevant failure concepts without assuming it was completed. This advances our mission of making relational-model claims that can survive scrutiny.
+The checkpoint joins these ideas: **public initialization → legal task inputs → actual updates → validation selection → independently checked predictions**. A failure anywhere prevents the practical exit. Lesson 179 is not yet present in this checkout; this lesson revisits the relevant failure concepts without assuming it was completed. This advances our mission of making relational-model claims that can survive scrutiny.
 
 ## 2 · Name the model before naming the result
 
@@ -62,6 +62,12 @@ These are source observations, not executed guarantees. F1 training gradients, l
 ## 5 · The checkpoint is a conjunction of evidence
 
 **Your third live function:** retain every blocker, then distinguish admission from completed execution and reviewed learner work. Removing only the budget blocker must leave the temporal blocker visible. An affordable GPU subtotal is insufficient: an explicit all-in upper bound must also fit the cap. The actual all-in bound remains unknown. Even when every prerequisite is hypothetically passed, a run that has not happened cannot pass the practical exit.
+
+**Trace admission separately from completion.** In this hypothetical exercise only, suppose all six prerequisites pass and a $5 GPU subtotal sits inside a declared $7 all-in bound and $10 cap. The actual RT experiment above does not satisfy these assumptions:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Fresh fit</th><th>Defense</th><th>Practical exit</th></tr></thead><tbody><tr><td>Not run</td><td>Pending</td><td>Incomplete</td></tr><tr><td>Independently verified</td><td>Pending</td><td>Pending written defense</td></tr><tr><td>Independently verified</td><td>Pass</td><td>Pass</td></tr></tbody></table>
+
+Admission is ready in all three rows; the evidence of execution and understanding differs. **Transfer check:** discover a failed temporal audit after the final row. The decision becomes BLOCKED and the practical exit INCOMPLETE. A previously reviewed explanation cannot override a failed prerequisite, and a checked box is not a new audit artifact.
 
 [[CODE]]
 

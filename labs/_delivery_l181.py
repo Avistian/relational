@@ -42,11 +42,13 @@ with sync_playwright() as pw:
   host.screenshot(path=f'/tmp/l181-explorer-seed-{width}.png');host.locator('[data-reset]').click();host.screenshot(path=f'/tmp/l181-explorer-{width}.png')
   pred=page.locator('#predict');assert pred.locator('.predict-reveal').is_disabled();assert len(set(len(x.split()) for x in pred.locator('.predict-option').all_inner_texts()))==1
   pred.locator('[data-value=zero]').click();pred.locator('.predict-reveal').click();assert 'zero' in pred.locator('.predict-outcome').inner_text()
-  assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
-  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===4&&xs.every(x=>x.complete&&x.naturalWidth>0)')
+  assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
+  page.locator('figure img').evaluate_all("xs=>xs.forEach(x=>x.loading='eager')")
+  page.wait_for_function("[...document.querySelectorAll('figure img')].every(x=>x.complete&&x.naturalWidth>0)")
+  assert page.locator('figure img').evaluate_all('(xs)=>xs.length===5&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l181-top-{width}.png')
-  for i in range(4):page.locator('figure').nth(i).screenshot(path=f'/tmp/l181-figure-{i}-{width}.png')
+  for i in range(5):page.locator('figure').nth(i).screenshot(path=f'/tmp/l181-figure-{i}-{width}.png')
  page.emulate_media(media='print');assert host.locator('.av-controls').evaluate('(x)=>getComputedStyle(x).display')=='none';page.screenshot(path='/tmp/l181-print.png')
  context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==1 and '68,925' in pg.locator('body').inner_text();assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
  page.emulate_media(media='screen');page.set_viewport_size({'width':1050,'height':900});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==4
@@ -74,6 +76,7 @@ for path in [R/'lessons'/(S+'.html'),R/'reference/relbench-v2-autocomplete.html'
 paths=[R/'lessons'/(S+'.html'),R/'reference/relbench-v2-autocomplete.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l181/report.md']+sorted((P/'figures/l181').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l181.py','_build_l181.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_visibility_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=4,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l181_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

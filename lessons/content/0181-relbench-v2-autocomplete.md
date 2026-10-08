@@ -65,6 +65,12 @@ Before training a graph model, reproduce the baseline meanings. **Global mean/me
 
 All five recipes were evaluated on both complete validation and test populations: **68,925 predictions**. Independent SQL reconstructed every label, scalar aggregation regenerated every prediction, and scikit-learn independently checked every metric. All **40 comparisons** with the paper's rounded baseline MAE/R² values are within the predeclared `0.001` tolerance. These are deterministic recipes; repeated seeds would not create meaningful uncertainty bars.
 
+**Work an unseen-identity baseline.** Fit on row IDs 100 and 101 with positions 1 and 3. Query different row IDs 200 and 201, whose true positions happen to be 1 and 3. The fitting mean is 2; neither query ID has a fitted entity group:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Recipe</th><th>Predictions</th><th>MAE</th><th>R²</th></tr></thead><tbody><tr><td>Entity mean, unseen → 0</td><td>[0, 0]</td><td>2</td><td>−4</td></tr><tr><td>Global fitted mean</td><td>[2, 2]</td><td>1</td><td>0</td></tr></tbody></table>
+
+For the first row, squared error is `1² + 3² = 10`; squared deviation from the query mean is `1² + 1² = 2`, so R² is `1 − 10/2 = −4`. Negative R² is valid. **Transfer check:** if both query truths become 2, that denominator is zero. This lesson's scorer rejects undefined R² instead of inventing a finite value; MAE can still be defined separately. These invented rows explain the metric, not another benchmark result.
+
 The large entity-baseline errors are intelligible: zero primary-key overlap makes both entity recipes use the zero fallback. This result checks our understanding of task identity, rather than proving that relational history is useless.
 
 ## 5 · Model architecture: what the fresh GNN would train
@@ -93,7 +99,7 @@ Local GraphSAGE combines nearby messages. **Attention** then gives sampled rows 
 
 **Do not compare the wrong columns.** RelGT-AC's tables reuse RelBench **validation** numbers. Its reported F1 R² values `0.528` and `0.239` must not be compared as fresh test results against RelBench test values `0.394` and `0.015`. The paper-described seed-only masking also differs from the baseline's global removal. Before attributing a gain to attention, establish matched information access, split identities and selection procedures.
 
-The paper states that code and checkpoints are released. In a bounded search of the paper, author page and repository search results, we did not locate an authenticated RelGT-AC release. That is a search result, not proof of absence. The architecture here follows the paper and is not a validated reimplementation. Its numerical reproduction remains **NOT_RUN_SOURCE_GAPS**. [Search and protocol ledger](../labs/sources/l181/protocol-audit.json).
+The paper states that code and checkpoints are released. In the recorded 2026-10-02 bounded search of the paper, author page and repository search results, we did not locate an authenticated RelGT-AC release. That is a search result, not proof of absence. The architecture here follows the paper and is not a validated reimplementation. Its numerical reproduction remains **NOT_RUN_SOURCE_GAPS**. [Search and protocol ledger](../labs/sources/l181/protocol-audit.json).
 
 ## 7 · Run, defend, retrieve
 
