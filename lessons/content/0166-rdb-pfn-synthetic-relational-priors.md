@@ -91,6 +91,12 @@ Two evidence boundaries matter even with that close match:
 - **Target meaning:** all 12,679 released labels are the complement of the current raw-data DNF definition on the checked keys. We retained the release for numerical replay. To interpret scores as current-definition DNF risk, complement both labels and probabilities. The column name alone is insufficient provenance.
 - **Historical features:** three available MAX timestamp features stay before their owner cutoffs, and the source config requests temporal DFS. We did not regenerate every released feature from the original historical database. Availability history and exact historical preprocessing identity remain unestablished.
 
+**Work the label orientation through the metric.** Use four invented queries with labels `[1,1,0,0]` and probabilities `[0.8,0.9,0.8,0.1]`. As in Lesson 165, the four positive–negative comparisons give AUROC 0.875. Now change which outcome “positive” means:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Labels</th><th>Probabilities</th><th>AUROC</th></tr></thead><tbody><tr><td>Original <code>y</code></td><td>Original <code>p</code></td><td>0.875</td></tr><tr><td>Complement <code>1−y</code></td><td>Original <code>p</code></td><td>0.125</td></tr><tr><td>Original <code>y</code></td><td>Complement <code>1−p</code></td><td>0.125</td></tr><tr><td>Complement <code>1−y</code></td><td>Complement <code>1−p</code></td><td>0.875</td></tr></tbody></table>
+
+Complementing both preserves ranking quality for the newly named positive outcome; complementing only one reverses it. This does not establish calibration or repair historical feature availability. **Transfer check:** if every probability is 0.5, all four AUROCs are 0.5. Why? Every positive–negative comparison is tied. The example explains orientation; it is not another measured benchmark result.
+
 The independent evaluator recomputes every score and validates all 21,060 predictions against 702 complete `(driverId,date)` keys. That is complete selected **checkpoint evaluation**. Fresh foundation-model pretraining and the whole 19-task benchmark remain **NOT_RUN**. The conservative budget accounting is **$4.41**, including reservations and overhead; it is not an itemized invoice. [Evaluation audit](../labs/evidence/l166/evaluation-audit.json), [cost receipt](../labs/evidence/l166/cost.json).
 
 ## 6 · Make the explanation survive a changed example

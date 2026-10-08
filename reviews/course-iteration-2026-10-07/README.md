@@ -155,3 +155,15 @@ L162: Added equal-token/different-attention-cost examples with an imbalanced tra
 L163: Added a saved-row prediction decomposition for a renamed column, explaining the contribution of two coordinates and the remaining 766. Fresh full BART encoding reproduces all 720 vectors and token traces exactly; all 30 ridge candidates and 864 selected predictions match. Independent dual-ridge oracle and three mutants pass. Notebook code and execution unchanged; portable figures and mobile trace pass.
 
 L164: Added a negative-message max-aggregation example and empty-neighborhood distinction. Fresh released data/checkpoint downloads match all recorded hashes. Full 12,679-key and temporal audit, source forward/gradient parity across all 43 tensors, two real checkpoint query outputs and three mutants pass. Primary Table 12 checked. Full training remains NOT_RUN. Notebook code and execution unchanged; portable figures and mobile trace pass.
+
+L165: Added a two-cutoff row/label eligibility trace and delayed-arrival transfer case. Original v1 report read; 144 context cases, 96 graph cases, 1,134 tie-aware AUROC cases and three mutants pass. Dated the source-retrieval snapshot. Historical model reproduction remains NOT_RUN. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L166: Added four label/probability orientation combinations and a ties transfer case. Fresh parity for both released checkpoints, all 12 checkpoint mechanism traces and all 21,060 saved predictions pass. Primary v5 architecture/Table9 checked. Full benchmark inference/pretraining not rerun; raw-label reconstruction remains inherited. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L167: Added a count/mean collision trace with variance and order counterexamples. Actual DFS and independent arithmetic agree. All 21,060 predictions, regenerated support draws, 1,600 temporal cases, 400 support cases, source hashes and corruption tests pass. Three page/four portable figures checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L168: Added equal-database versus row-weighted AUROC differences and third-database transfer case. All 45,810 predictions, 13,779 independently archived task labels, 62 original sources and six corruptions checked. No new benchmark inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L169: Added actual retained/removed/new support counts for F1 seed0 at three doublings; source sampler independently agrees. All 300 evaluations/229,050 predictions, 938 files, complete curves, budget gates and six corruptions checked. No new inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L170: Added an actual test-context selection reversal with a validation-selected negative-result transfer case. Full 229,050-row replay matches, 2,560 claim-gate cases and six corrupted packets rejected. Primary paradigm sources checked. No new inference. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.

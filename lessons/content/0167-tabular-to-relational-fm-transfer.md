@@ -32,6 +32,12 @@ The shared interface is `predict(X_support, y_support, X_query)` with frozen wei
 
 **What cannot transfer automatically:** information discarded by the representation. Child histories `[2,8]` and `[5,5]` both become count 2, mean 5. Any predictor receiving only those two summaries sees identical inputs. It cannot distinguish their spread without another feature or representation. Better pretraining cannot reconstruct which history actually occurred.
 
+**Work the collision through the handoff.** These are two invented histories for the same cutoff. Population variance averages squared distance from the mean:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>History</th><th>Count, mean</th><th>Variance</th></tr></thead><tbody><tr><td>[2, 8]</td><td>[2, 5]</td><td>(9 + 9) / 2 = 9</td></tr><tr><td>[5, 5]</td><td>[2, 5]</td><td>(0 + 0) / 2 = 0</td></tr></tbody></table>
+
+Hold the support set, other query features and inference randomness fixed. A deterministic predictor given only `[count, mean]` must return the same prediction for both histories. Adding variance makes them distinguishable; it does not force a learned model to use it well. **Transfer check:** histories `[2,5,8]` and `[5,2,8]` also have the same variance. No order-invariant summary can tell which value came first. A task that depends on event order needs time-aware features or a sequence representation.
+
 [[PREDICT]]
 
 ## 3 · Worked trace: the attention mask is only half the contract

@@ -51,6 +51,12 @@ Our metric is **AUROC**, the probability that a random positive gets a higher sc
 
 For each task and seed, the release hashes a text key into an integer and draws K distinct training indices uniformly. It starts a new generator for each K. **Identical seeds do not make different-size draws nested prefixes.** A doubling changes both the number and the composition of supports. We preserve this published protocol rather than silently replacing it with an additive-support experiment.
 
+**Trace the actual support identities.** For F1 seed 0, regenerate the released sampler with 11,411 candidates and key `rel-f1-dfs-2:driver-dnf:0`. Compare sets of row identities, not their order:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Context change</th><th>Retained</th><th>Removed</th><th>New</th></tr></thead><tbody><tr><td>64 → 128</td><td>0</td><td>64</td><td>128</td></tr><tr><td>128 → 256</td><td>5</td><td>123</td><td>251</td></tr><tr><td>256 → 512</td><td>256</td><td>0</td><td>256</td></tr></tbody></table>
+
+Check the accounting: retained + removed equals the old size; retained + new equals the new size. The last pair happens to be nested for this draw, but the sampler does not guarantee nesting across sizes. **Transfer check:** an explicitly nested 64 → 128 experiment would retain 64, remove 0 and add 64. It would answer a different question and must not silently replace the released protocol.
+
 At a fixed K, model differences are paired on exactly the same supports. Across K, seed-indexed differences are descriptive contrasts under the released sampler; they are not the causal effect of adding precisely K extra rows to an unchanged support set. The notebook also reports actual support overlaps. A separately declared nested-support experiment would answer that narrower question.
 
 [[CODE]]

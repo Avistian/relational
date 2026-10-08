@@ -82,6 +82,12 @@ For database d and support seed s, compute `delta[d,s] = AUROC(RDBPFN) − AUROC
 
 **Hand-worked counterexample:** a small database gains +0.10 and a large one loses −0.20. Their equal-database macro gain is `(0.10 − 0.20)/2 = −0.05`, regardless of row counts. Pooling predictions from different tasks changes the estimand: score scales and target meanings differ. Counting ten support draws as ten independent databases also overstates the evidence. The plotted sample SD describes support-selection variation on a fixed test population; it is not a confidence interval over new databases.
 
+**Make the weighting visible.** Give the invented small database 100 test rows and the large one 900. Keep their gains fixed; this is a comparison of estimands, not a re-run of either model:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Weighting</th><th>Calculation</th><th>Mean gain</th></tr></thead><tbody><tr><td>Equal databases</td><td>(+0.10 − 0.20) / 2</td><td>−0.05</td></tr><tr><td>By row count</td><td>0.1 × 0.10 + 0.9 × (−0.20)</td><td>−0.17</td></tr></tbody></table>
+
+The second row is a row-weighted average of two AUROC differences; it is **not** an AUROC computed from pooled predictions. Both are defined quantities, but only the first answers this lesson's equal-database question. **Transfer check:** add a third database with gain +0.20. The macro becomes `(0.10 − 0.20 + 0.20)/3 ≈ +0.0333`, regardless of its test-row count. More support draws on the original two databases would still leave two databases.
+
 An **estimand** is the quantity the comparison is meant to measure. Here it is the mean task-level gain across the two selected databases. **Macro** means each database contributes equally. SD means standard deviation, the spread of the ten support-draw results; changing those draws does not create additional databases.
 
 The notebook makes you implement three load-bearing functions: classify exposure/adaptation, assemble complete paired gains, and calculate the equal-database macro. These functions feed the actual saved-evidence audit and final table. Checks reject a missing seed, duplicate run, mismatched test count and mixed metric; the raw audit separately rejects wrong keys, supports, labels and hashes.

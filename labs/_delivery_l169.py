@@ -53,7 +53,7 @@ with sync_playwright() as pw:
       claims.locator('[data-axis]').select_option(axis);claims.locator('[data-controlled]').select_option(str(controlled).lower());claims.locator('[data-levels]').select_option(str(levels));claims.locator('[data-extrapolate]').select_option(str(extra).lower())
       assert claims.get_attribute('data-claim')==scaling_claim(axis,controlled,levels,extra);states+=1
   claims.locator('[data-reset]').click();assert claims.get_attribute('data-claim')=='CONTEXT_RESPONSE_ONLY'
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   labels=[x.inner_text() for x in predict.locator('.predict-option').all()]
   predict.locator('[data-value="context"]').click();predict.locator('.predict-reveal').click();assert 'weights' in predict.locator('.predict-outcome').inner_text()
@@ -95,6 +95,7 @@ paths=[R/'lessons'/(S+'.html'),R/'reference/scaling-laws.html',P/(S+'.ipynb'),P/
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_figures_l169.py')],check=True,capture_output=True)
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l169.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',

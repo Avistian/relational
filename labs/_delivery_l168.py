@@ -45,7 +45,7 @@ with sync_playwright() as pw:
   host.locator('[data-reset]').click();assert host.get_attribute('data-adaptation')=='FEW_SHOT_ICL';assert host.get_attribute('data-holdout')=='NOT_ESTABLISHED'
   control=host.locator('[data-exposure]');control.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Tab');assert control.input_value()=='excluded'
   host.locator('[data-reset]').click();assert control.input_value()=='unknown'
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   labels=[x.inner_text() for x in predict.locator('.predict-option').all()]
   predict.locator('[data-value="few"]').click();predict.locator('.predict-reveal').click();assert '512' in predict.locator('.predict-outcome').inner_text()
@@ -86,6 +86,7 @@ with tempfile.TemporaryDirectory(prefix='l168-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/cross-database-generalization.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l168/report.json',P/'evidence/l168/report.md']+sorted((P/'figures/l168').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l168.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',

@@ -16,7 +16,7 @@ student=nbformat.read(P/(S+'.ipynb'),4);solution=nbformat.read(P/'solutions'/(S+
 assert sum('raise NotImplementedError("TODO:' in c.source for c in student.cells)==3
 assert all(not c.outputs for c in student.cells if c.cell_type=='code')
 assert all(c.execution_count is not None and not any(o.output_type=='error' for o in c.outputs) for c in solution.cells if c.cell_type=='code')
-assert sum(c.source.count('data:image/png;base64,') for c in solution.cells)==3
+assert sum(c.source.count('data:image/png;base64,') for c in solution.cells)==4
 assert not any('def temporal_summary' in c.source or 'def eligible_support' in c.source or 'def keyed_auc' in c.source for c in student.cells if c.cell_type=='code' and 'raise NotImplementedError' not in c.source)
 code='\n\n'.join(c.source for c in solution.cells if c.cell_type=='code')
 assert hashlib.sha256(code.encode()).hexdigest()==json.loads((P/'_execution_l167_results.json').read_text())['executed_code_sha256']
@@ -50,7 +50,7 @@ with sync_playwright() as pw:
   host.locator('[data-reset]').click();assert host.locator('[data-cutoff]').input_value()=='10'
   control=host.locator('[data-cutoff]');control.focus();page.keyboard.press('ArrowDown');page.keyboard.press('Tab');assert control.input_value()=='20'
   host.locator('[data-reset]').click();assert control.input_value()=='10';assert host.locator('[data-value]').input_value()=='12'
-  assert page.locator('#warmup button').count()>0
+  assert page.locator('#warmup button').count()==0
   predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
   predict.locator('[data-value="lost"]').click();predict.locator('.predict-reveal').click();assert 'identical' in predict.locator('.predict-outcome').inner_text()
   assert page.locator('#teachback textarea').count()==1
@@ -61,7 +61,7 @@ with sync_playwright() as pw:
   for i in range(3):page.locator('figure').nth(i).screenshot(path=f'/tmp/l167-figure-{i}-{width}.png')
  page.emulate_media(media='print');assert page.locator('.transfer-controls').first.evaluate('(x)=>getComputedStyle(x).display')=='none'
  context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert pg.locator('noscript').count()==1;assert '21,060' in pg.locator('body').inner_text();assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
- page.emulate_media(media='screen');page.set_viewport_size({'width':1000,'height':900});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==3
+ page.emulate_media(media='screen');page.set_viewport_size({'width':1000,'height':900});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==4
  assert 'Authenticated all original evidence files' in page.locator('body').inner_text()
  page.locator('img[src^="data:image/png"]').first.screenshot(path='/tmp/l167-notebook-figure.png')
  browser.close()
@@ -92,10 +92,11 @@ with tempfile.TemporaryDirectory(prefix='l167-pages-') as tmp:
 paths=[R/'lessons'/(S+'.html'),R/'reference/tabular-relational-transfer.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l167/report.json',P/'evidence/l167/report.md']+sorted((P/'figures/l167').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l167.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',
-       inline_source_parity='PASS',primary_reading_snapshots_checked=4,portable_figures=3,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),
+       inline_source_parity='PASS',primary_reading_snapshots_checked=4,portable_figures=4,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),
        copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',historical_fidelity='NOT_ESTABLISHED',javascript_errors=errors,
        live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l167_results.json').write_text(json.dumps(r,indent=2)+'\n');print(r)

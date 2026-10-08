@@ -59,7 +59,7 @@ with sync_playwright() as pw:
         predict=page.locator('#predict');assert predict.locator('.predict-reveal').is_disabled()
         labels=predict.locator('.predict-option').all_inner_texts();assert len(set(len(x.split()) for x in labels))==1
         predict.locator('[data-value="scoped"]').click();predict.locator('.predict-reveal').click();assert 'two tasks' in predict.locator('.predict-outcome').inner_text()
-        assert page.locator('#warmup button').count()>0 and page.locator('#teachback textarea').count()==1
+        assert page.locator('#warmup button').count()==0 and page.locator('#teachback textarea').count()==1
         assert page.locator('figure img').evaluate_all('(xs)=>xs.length===3&&xs.every(x=>x.complete&&x.naturalWidth>0)')
         assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1')
         page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l170-top-{width}.png');host.screenshot(path=f'/tmp/l170-intervention-{width}.png')
@@ -97,6 +97,7 @@ paths=[R/'lessons'/(S+'.html'),R/'reference/fm-design-checkpoint.html',P/(S+'.ip
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_figures_l170.py')],check=True,capture_output=True)
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l170.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 after=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 assert before==after,'Builder changed: '+str([str(p) for p,a,b in zip(paths,before,after) if a!=b])
 r=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',primary_reading_snapshots_checked=4,portable_figures=3,notebook_code_cells=sum(c.cell_type=='code' for c in solution.cells),copied_pages_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')

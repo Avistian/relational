@@ -64,6 +64,12 @@ For a summary across these two tasks, give each task one equal weight. Do not co
 
 **Interpretation.** At K=512, RDB-PFN's mean advantage is positive on both tasks, but only six of ten support draws are positive in each. At K=64 it loses on F1 and wins on trial; at K=128 both mean differences are negative. This is a reason to test context sensitivity. Selecting the best K from these test results would turn descriptive analysis into test-set tuning. In a future experiment, freeze K using validation data before evaluating test results.
 
+**Worked decision trap: choosing context after seeing test results.** The authenticated equal-task mean gains over TabICL are:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Context K</th><th>Mean AUROC gain</th><th>Meaning</th></tr></thead><tbody><tr><td>128</td><td>−0.007372</td><td>TabICL ahead on average</td></tr><tr><td>256</td><td>+0.010474</td><td>RDB-PFN ahead on average</td></tr></tbody></table>
+
+Choosing 256 after inspecting these test results changes the displayed advantage by about **0.017846 AUROC** relative to 128. That arithmetic is valid descriptive analysis; the same test set can no longer provide an independent evaluation of the newly selected context policy. **Transfer check:** if validation had selected 128 before test scores were revealed, keep its negative test result as the selected-policy result. Report the full sweep separately. A disappointing test outcome does not authorize replacing the frozen policy.
+
 ## 4 · Audit the claim, not just the arithmetic
 
 A trustworthy replay can still sit inside an incomplete scientific comparison. The original released labels are complements of the pinned raw task labels; the saved experiment consistently retains the released orientation. Available support-horizon and selected timestamp checks passed, but these are not a complete audit of historical information availability. Full DFS regeneration was not run. Exact target-schema exclusion and checkpoint training lineage remain unestablished.
