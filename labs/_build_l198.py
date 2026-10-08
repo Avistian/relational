@@ -43,7 +43,7 @@ for name,caption in [('temporal','Invented scores isolate the change in a model 
  figure='<figure><div class="diagram-scroll" tabindex="0" role="region" aria-label="Scrollable '+name+' experiment"><img src="../labs/figures/l198/'+name+'.svg" alt="'+html.escape(caption)+'"></div><figcaption>'+caption+'</figcaption></figure>'
  figures[name]=(figure,caption);prose=prose.replace('[[FIG:'+name+']]',figure)
 def doc(title,body,scripts=False):
- body=body.replace('<table>','<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable research table"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable research table"><table\1>',body).replace('</table>','</table></div>')
  tags=''.join('<script src="../assets/'+x+'.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','research-priority','proposal-decisions','l198-lesson']) if scripts else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+x+'.css">' for x in ['lesson','research-priority','proposal-decisions'])+'</head><body><article class="l198"><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav>'+body+'</article>'+tags+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Lesson 198 — Three research directions',render(prose),True))
@@ -133,6 +133,13 @@ def notebook(solution):
  code('submission={"proposals":[{"id":name,"draft":""} for name in ["temporal","composite","transfer"]],"revised_ranking":[],"changed_assumption":"","reversal_condition":"","learner":"PENDING_WRITTEN_DEFENSE"}\nPath("l198-submission.json").write_text(json.dumps(submission,indent=2))\nprint("DRAFT: complete the three cards and request review. Prior exits remain unchanged.")')
  book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
  for idx,cell in enumerate(book.cells):cell.id=('solution' if solution else 'student')+'-l198-'+str(idx)
+ path=P/'solutions'/(S+'.ipynb')
+ if solution and path.exists():
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  return book
 nb.write(notebook(False),P/(S+'.ipynb'));nb.write(notebook(True),P/'solutions'/(S+'.ipynb'))
 print('Built lesson, complete cards, reference, portable ZIP and both notebooks')

@@ -8,11 +8,11 @@
 
 **Route:** 15-minute lesson → notebook exercises → short defense. Retrieve [L060's broad comparison](0060-broad-model-comparison.html) and [L170's FM checkpoint](0170-fm-design-checkpoint.html). [L200](0200-year-5-exit-exam.html) established a selected checkpoint result. It left a harder question open: which comparisons could justify the next research decision?
 
-## 1 · Predict before reading
+## 1 · Define the comparison unit
 
-Close the references and answer: a graph predictor sees customers and their orders; a tree sees only customer age. The graph predictor scores higher. Have we isolated the value of graph computation?
 
-<details><summary>Check your explanation</summary><p>No. The graph predictor also received additional information. A useful next control gives a strong tree time-safe order features, then states what each representation retains. Even that comparison can differ in tuning, pretraining and computation.</p></details>
+
+
 
 A **comparison unit** is the complete evaluated configuration: input construction, predictor, adaptation, selection and inference recipe. A **matched-information contract** records what each configuration may observe. A **matched-computation contract** additionally fixes the relevant resource allowance. Equality on one axis does not imply equality on the other.
 
@@ -55,6 +55,15 @@ The [fair relational benchmark §3](https://arxiv.org/html/2607.03659v1#S3) uses
 **Worked frozen case.** L200 used released DFS feature arrays, fixed checkpoints, and 512 support rows for each of ten paired draws. DFS means aggregated features built from related tables. RDB-PFN and TabICL received relational information in those features. Their observed difference compares those fixed configurations on one test population. It does not identify a graph operator's benefit.
 
 The audit hashes actual query keys, labels, support identities and the prepared feature artifact. It checks the complete run grid before summarizing. The common budget policy declares the fixed evaluation; it does **not** claim equal pretraining or measured inference costs. Per-model checkpoints and recipes remain in the [frozen protocol](../labs/b01-reproduction.md).
+
+**Equal unknowns do not establish a match.** Hold the other nine contract fields fixed and compare only feature identity and visibility:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Features</th><th>Visibility</th><th>Contract status</th></tr></thead><tbody><tr><td>Same artifact</td><td>Same known policy</td><td>Matched</td></tr><tr><td>Same artifact</td><td>Both unknown</td><td>Not established</td></tr><tr><td>Different artifacts</td><td>Same known policy</td><td>Incomparable under this contract</td></tr><tr><td>Different artifacts</td><td>Both unknown</td><td>Incomparable, with visibility also unresolved</td></tr></tbody></table>
+
+Two records containing the word UNKNOWN agree as strings but provide no visibility evidence. In the final row, fixing the feature mismatch alone still leaves an unknown field. The returned lists of mismatches and unknowns preserve both issues; the headline status is not the entire audit.
+
+**Transfer the trace.** Resolve visibility while leaving the artifacts different. The contract still does not match. Resolve both, then ask whether the declaration is supported by actual hashes and source evidence: matching text cannot establish the truth of its assertions.
+
 
 **Availability is a separate question.** We can authenticate the released arrays without proving when all underlying records arrived. For a claim about historically available information, the visibility field is `NOT_ESTABLISHED`. The equality checker only checks the declared contract; source evidence must justify its values.
 

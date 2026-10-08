@@ -6,13 +6,7 @@
 
 [[STATUS]]
 
-## 1 · Close the books first
-
-
-
-Write three answers before scrolling: What distinguishes released-checkpoint inference from pretraining? Why are ten support draws not ten independent replications? Why does an old event timestamp fail to prove that a feature was available?
-
-<details><summary>Retrieve, then check</summary><p>Checkpoint inference uses existing learned weights. Pretraining learns those weights across tasks. The ten draws share one test population. Event time records when something happened; arrival time records when a predictor could access it. Neither score agreement nor an event timestamp establishes historical availability.</p></details>
+## 1 · Bring your result and proposal together
 
 **The bridge to this exam.** [L197](0197-year-5-essay.html) assembled claims and limitations. [L198](0198-three-research-directions.html) made three proposal cards; [L199](0199-select-primary-direction.html) separated priority, feasibility and launch authorization. Now you must connect a measured result to one testable question. Bring your own cards and selection memo into this exam; the author's worked choice is an example to challenge, not a substitute for your decision.
 
@@ -57,6 +51,15 @@ Our named target is **RDB-PFN v5, Table 9, rel-f1/driver-dnf, 512 support exampl
 **AUROC** is the fraction of positive–negative pairs in which the positive receives the higher score, with half credit for a tie. It measures ranking, not calibrated probabilities or operational benefit.
 
 **Worked example.** Positive scores are `[0.5, 0.8]`; negative scores are `[0.1, 0.5]`. The four comparisons earn `1, 0.5, 1, 1`: AUROC is `3.5 / 4 = 0.875`. Ties matter. A row permutation should change nothing after joining predictions to labels by complete keys.
+
+**A perfect ranking is not a complete probability assessment.** Keep labels `[0,0,1,1]` fixed and compare two hypothetical prediction vectors:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Probabilities</th><th>AUROC</th><th>Brier score</th></tr></thead><tbody><tr><td>0.10,0.20,0.80,0.90</td><td>1</td><td>0.025</td></tr><tr><td>0.40,0.45,0.55,0.60</td><td>1</td><td>0.18125</td></tr></tbody></table>
+
+Every positive outranks every negative in both rows. The **Brier score** averages squared probability errors, `mean((p−y)²)`; lower is better. For the first vector it is `(0.01 + 0.04 + 0.04 + 0.01)/4 = 0.025`. Identical AUROC can therefore coexist with different probability error. Four invented labels do not establish population calibration; the example only demonstrates information AUROC leaves out.
+
+**Transfer the trace.** Set every probability to 0.5. All pairs tie, so AUROC becomes 0.5 and Brier score becomes 0.25. Explain why the selected Table 9 reproduction establishes a ranking result, without also establishing calibration or the value of a deployment decision.
+
 
 **Two keys, not one.** Driver 1 at cutoff 10 and driver 1 at cutoff 20 are different queries. Joining only on driver ID can silently attach the wrong outcome. The notebook asks you to implement the full-key join and reject duplicates, missing identities, nonfinite probabilities and incomplete run grids.
 

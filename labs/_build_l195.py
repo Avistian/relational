@@ -47,7 +47,7 @@ def fill(text,portable=False):
  return text
 
 def doc(title,body,scripts=False):
- body=body.replace('<table>','<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table\1>',body).replace('</table>','</table></div>')
  tail=''.join('<script src="../assets/'+n+'.js"></script>' for n in ['retrieval-pool','retrieval-bank','predict','teachback','thesis-stress']) if scripts else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/multitask-reproduction.css"><link rel="stylesheet" href="../assets/thesis-stress.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav>'+body+'</article>'+tail+'</body></html>'
 prose=(R/'lessons/content'/(S+'.md')).read_text();(R/'lessons'/(S+'.html')).write_text(doc('Lesson 195 — Thesis stress-test',render(fill(prose)),True))
@@ -106,7 +106,10 @@ def notebook(solution):
 for solution in [False,True]:
  path=P/('solutions' if solution else '')/(S+'.ipynb');book=notebook(solution)
  if solution and path.exists():
-  old=nb.read(path,4)
-  if [c.source for c in old.cells]==[c.source for c in book.cells]:book=old
+     old=nb.read(path,4);book.metadata=old.metadata
+     previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+     if [c.source for c in previous]==[c.source for c in current]:
+         for prior,c in zip(previous,current):
+             c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  nb.write(book,path)
 print('Built lesson/reference, three figures, and portable student/solution notebooks')

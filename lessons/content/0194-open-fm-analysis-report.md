@@ -48,6 +48,15 @@ Follow one customer query: select records permitted by its cutoff; summarize lin
 
 A missing result returns `None` (an explicit absence), not zero. A zero gap means equal displayed scores; it is not evidence of equivalence. Rounded scalars cannot recover seed variability, paired prediction errors, or a significance test. Three tasks from one database are not three independent databases.
 
+**Test what a printed tie can hide.** These are invented underlying AUROCs rounded to four decimals, not recovered paper values:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Model</th><th>Comparator</th><th>Hidden gap</th><th>Printed gap</th></tr></thead><tbody><tr><td>0.70004</td><td>0.69996</td><td>+0.00008</td><td>0</td></tr><tr><td>0.69996</td><td>0.70004</td><td>−0.00008</td><td>0</td></tr></tbody></table>
+
+Both pairs print as `0.7000` versus `0.7000`. The displayed tie is compatible with either hidden direction; it supplies no seed variance. Keep the report's label “equal at printed precision.” A practical equivalence claim needs a prespecified margin and suitable uncertainty evidence beyond this rounding arithmetic.
+
+**Transfer the trace.** Make the model result missing. `oriented_gap` returns `None`, and the summary increments missing rather than equal. Explain why replacing absence by zero would invent a measured tie.
+
+
 ## 4 · The complete report, including what did not run
 
 The target remains the **RDBLearn v1 column across all 21 tasks**, with the released source pinned to commit `b5b03ebf8091547285a6e06cba53d2d1a40cb171`, release 0.1.2 and FastDFS 0.2.1. Per task, course seeds `0,1,2` each search depths `2,3,4` × TabPFNv2/TabPFNv2.5/LimiX-16M, official splits, and a 10,000-example support cap. These seeds extend repeatability; they are not recovered historical seeds. See the [inherited protocol](../labs/evidence/l194/packet/protocol.json).

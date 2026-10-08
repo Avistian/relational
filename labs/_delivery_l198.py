@@ -24,6 +24,7 @@ for path in paths:
 fixed=[R/'lessons'/(S+'.html'),R/'reference/three-research-directions.html',P/(S+'.ipynb'),E/'reproducer.zip',E/'ranked-proposals.md']
 before={p:p.read_bytes() for p in fixed};executed=(P/'solutions'/(S+'.ipynb')).read_bytes()
 subprocess.run([sys.executable,str(P/'_build_l198.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 rebuilt=nbformat.read(P/'solutions'/(S+'.ipynb'),4);assert '\n\n'.join(c.source for c in rebuilt.cells if c.cell_type=='code')==code
 (P/'solutions'/(S+'.ipynb')).write_bytes(executed)
 assert all(p.read_bytes()==b for p,b in before.items()),'Nondeterministic builder'

@@ -14,6 +14,8 @@
 
 
 
+## 1 · Make the thesis testable
+
 **Mission connection.** The mission asks whether relational learning unlocks overlooked value. To test that claim, first make it possible to be wrong. A **falsifier** is an observation that would contradict a specified claim under a valid measurement procedure. It is not simply an inconvenient number.
 
 ## 2 · Split the thesis before attacking it
@@ -44,6 +46,15 @@ The first packet comes from [L149](0149-weakest-relbench-tasks.html): basic Grap
 [[FIG:regression]]
 
 **Uncertainty has a unit.** Several predictions concern the same driver, so independently resampling individual rows would ignore that grouping. We first average each query's loss difference over the five saved runs, then resample whole drivers with replacement. We retain query weighting within each draw. The 2.5th and 97.5th percentiles of 2,000 draws form a **conditional descriptive interval**: `[-0.449621, +0.085850]` for GNN advantage.
+
+**Trace one clustered resample.** Use a tiny hypothetical set: driver A has two query advantages `[+1,+1]`, and driver B has one `[-1]`. Positive favors the candidate. The original query-weighted mean is `(+1 + 1 − 1)/3 = 1/3`. Resampling two drivers with replacement yields:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Driver draw</th><th>Query values</th><th>Draw mean</th></tr></thead><tbody><tr><td>A, A</td><td>+1,+1,+1,+1</td><td>1</td></tr><tr><td>A, B</td><td>+1,+1,−1</td><td>1/3</td></tr><tr><td>B, B</td><td>−1,−1</td><td>−1</td></tr></tbody></table>
+
+B,A has the same mean as A,B. A selected driver's entire block travels together; selecting A twice repeats both of its queries. Averaging driver means instead would give zero in the mixed draw. That would change the weighting rule, not merely the resampling unit. This toy explains the algorithm; its three queries are not extra F1 evidence.
+
+**Transfer the trace.** Give B two identical −1 queries. The mixed draw and original mean both become zero; equal-driver and equal-query weighting now coincide because block sizes match. State both the resampling unit and weighting rule when reporting uncertainty.
+
 
 It crosses zero. This does not demonstrate a reliable GNN advantage, and it does not prove equivalence or a universal feature-engineering victory. The interval holds the fitted models and split fixed. It does not cover new-database uncertainty or dependence between drivers in the same race. The test set has been examined in earlier lessons, so this is exploratory evidence.
 

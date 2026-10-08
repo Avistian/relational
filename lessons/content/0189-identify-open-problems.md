@@ -70,6 +70,15 @@ On a phone, the ranking plot scrolls horizontally; the explorer and results tabl
 
 The executable audit tries **all 27 weight triples from {1,2,3}³**. Temporal validity leads all 27 at the authored scores. This only shows stability to those weights. At equal weights and temporal impact 3, its score becomes 14, so composite structure leads at 15. Changing the assumptions can change the decision.
 
+**Separate weight sensitivity from judgment sensitivity.** The original 27-setting sweep holds every candidate score fixed. Compare it with these explicit interventions:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Temporal impact</th><th>Weights</th><th>Temporal</th><th>Composite</th></tr></thead><tbody><tr><td>4</td><td>1,1,1</td><td>18.67</td><td>15</td></tr><tr><td>3</td><td>1,1,1</td><td>14</td><td>15</td></tr><tr><td>3</td><td>1,5,4</td><td>13.5</td><td>13.5</td></tr></tbody></table>
+
+The second row changes one subjective judgment and reverses the leader. The third also changes the weights outside the original `{1,2,3}` grid: `3 × (5 + 20 + 20)/10 = 13.5`, matching `5 × (4 + 15 + 8)/10`. It is an additional hypothetical tie, not a cell already counted in the 27-setting audit.
+
+**Transfer the trace.** At the tied setting, increase temporal impact back to 4. Its score becomes 18 while composite stays 13.5. State which judgment needs better evidence before treating that priority change as a reason to spend money. A stable ranking under some weights cannot validate the underlying scores.
+
+
 ## 4 · Priority is not permission to run
 
 Unknown expense is not zero. Count preparation, every training arm and seed, selection, full evaluation, retry reserve and validation. A proposal with any missing phase or an unverified bound stays `NOT_ESTABLISHED`; a known total above $10 is `OVER_CAP`. A failed source audit blocks interpretation even when the arithmetic looks affordable. Passing the numerical gate still does not authorize execution.

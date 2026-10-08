@@ -203,3 +203,31 @@ L186: Added two-response four-clock calculation and unknown-dependency transfer.
 L187: Corrected Laplace mechanism citation from Definition3.4 to3.3. Added removal/replacement sensitivity counterexample; full 2,571 neighboring histograms and 56,970 noise coordinates checked. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
 
 L188: Removed leftover opening retrieval prompt. Added submission/revision/retrieval/historical-content date trace. Full frozen Q3 collection replay and 100 randomized pagination cases checked; collection remains incomplete. Code/execution unchanged; mobile trace, portable figures and browser delivery pass.
+
+L189: Ranking sensitivity with exact weighted arithmetic and tie control. Independent source/evidence audit is recorded in l189-check.json; browser delivery and notebook preservation pass.
+
+L190: Win frequency versus mean AUROC effect, with zero-mean transfer. Independent source/evidence audit is recorded in l190-check.json; browser delivery and notebook preservation pass.
+
+L191: Single-method baseline versus taskwise oracle, with missing-task exclusion. Independent source/evidence audit is recorded in l191-check.json; browser delivery and notebook preservation pass.
+
+L192: Query-dependent category shifts, including fresh full original preprocessing in the pinned environment. Independent source/evidence audit is recorded in l192-check.json; browser delivery and notebook preservation pass.
+
+L193: Task-weighted versus query-count-weighted metrics and missing-task refusal. Independent source/evidence audit is recorded in l193-check.json; browser delivery and notebook preservation pass.
+
+L194: Printed ties versus hidden precision, without inventing unreported digits. Independent source/evidence audit is recorded in l194-check.json; browser delivery and notebook preservation pass.
+
+L195: Driver bootstrap draws and unequal query counts. Independent source/evidence audit is recorded in l195-check.json; browser delivery and notebook preservation pass.
+
+L196: Community reply, verified current fix and historical reproduction identity. Independent source/evidence audit is recorded in l196-check.json; browser delivery and notebook preservation pass.
+
+L197: A flattening collision and the explicit feature that resolves it. Independent source/evidence audit is recorded in l197-check.json; browser delivery and notebook preservation pass.
+
+L198: Strict sensitivity thresholds and boundary-touching intervals. Independent source/evidence audit is recorded in l198-check.json; browser delivery and notebook preservation pass.
+
+L199: Priority versus independent launch-readiness gates. Independent source/evidence audit is recorded in l199-check.json; browser delivery and notebook preservation pass.
+
+L200: Identical perfect ranking with different squared probability error. Independent source/evidence audit is recorded in l200-check.json; browser delivery and notebook preservation pass.
+
+B01: Added matched/mismatched/unknown comparison-contract cases and independently checked saved evidence plus contract controls. Browser delivery and notebook preservation pass.
+
+Final closure: removed residual opening review prompts in B01, B07 and B18a; seven opening-cleanup regression tests pass. Refreshed 46 course diagram exports and their dependent portable copies after the shared CSS change. New lesson auditing stopped at 7% weekly allowance to reserve delivery capacity. Deep review covered every existing numbered lesson from L050 through L200 (L179 is absent), plus B01; L003–049 and remaining bridge lessons are not claimed as deeply reviewed in this pass. Historical saved evidence, fresh local checks, and unrun full reproductions remain separately labeled.

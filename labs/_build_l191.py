@@ -118,7 +118,10 @@ def notebook(solution):
 for solution in [False,True]:
  path=P/('solutions' if solution else '')/(S+'.ipynb');book=notebook(solution)
  if solution and path.exists():
-  old=nb.read(path,4)
-  if [c.source for c in old.cells]==[c.source for c in book.cells]:book=old
+     old=nb.read(path,4);book.metadata=old.metadata
+     previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+     if [c.source for c in previous]==[c.source for c in current]:
+         for prior,c in zip(previous,current):
+             c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  nb.write(book,path)
 print('Built lesson, reference, student and solution notebooks')

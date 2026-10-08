@@ -14,6 +14,8 @@
 
 
 
+
+
 A **support set** is the labeled set supplied to an in-context predictor. A **query** is an example to predict. A categorical encoder assigns integer codes to category names. If support has already been encoded, changing a name's code later can make the same name look different across support and query. That motivates a check; it does not measure what any particular predictor does with those codes.
 
 ## 2 · Start with the smallest complete observation
@@ -58,6 +60,15 @@ A reply might identify an intended contract, a fixed revision, an environment di
 
 <div id="community-feedback"></div>
 <noscript><p>Feedback states: no thread → DRAFT_ONLY; posted without response → AWAITING_RESPONSE; response without a completed check → RESPONSE_UNVERIFIED; response plus documented check → FEEDBACK_CHECKED. These describe workflow, not whether a scientific claim is true.</p></noscript>
+
+**Separate the reply from its implications.** Imagine a maintainer proposes a new commit. This hypothetical continuation has three distinct checks:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>New evidence</th><th>What it can settle</th><th>Still open</th></tr></thead><tbody><tr><td>Reply naming a commit</td><td>Which revision to test</td><td>Whether it fixes the reproducer</td></tr><tr><td>Fresh four-case check passes</td><td>The tested code-consistency failure</td><td>Benchmark score effect</td></tr><tr><td>Historical execution record</td><td>Which revision was actually used</td><td>Any remaining protocol differences</td></tr></tbody></table>
+
+A workflow marked `FEEDBACK_CHECKED` records that a response was checked; it is not a verdict that every claim in the response is true. Keep the proposed revision, your test and the conclusion together, including a failed check if that is what happened.
+
+**Transfer the trace.** Suppose the new code passes but the author cannot recover the historical revision. Write two sentences: the tested revision resolves this counterexample; historical paper-run identity remains unestablished. Do not combine them into “the paper has now been reproduced.”
+
 
 The widget is practice, not your actual participation record. A checked reply may refute your initial interpretation. Log the evidence either way. With no reply, retain the uncertainty; silence is neither agreement nor disagreement.
 

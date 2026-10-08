@@ -67,6 +67,7 @@ for name in ['lessons/'+S+'.html','reference/thesis-stress-test.html']:
   assert (path.parent/unquote(part.path)).resolve().is_file(),url;links+=1
 outputs=[R/'lessons'/(S+'.html'),R/'reference/thesis-stress-test.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+list((P/'figures/l195').glob('*'))
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs};subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l195.py')],check=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs},'Nondeterministic builder'
 result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print=True,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,portable_figures=3,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l195_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

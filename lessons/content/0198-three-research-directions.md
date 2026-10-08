@@ -50,6 +50,15 @@ A timestamp records an event time. An availability policy records when an input 
 
 **What would refute material sensitivity?** A justified interval wholly inside (−0.01, +0.01). An interval wholly above +0.01 or below −0.01 supports a material change. Crossing or touching a boundary is inconclusive under our conservative teaching rule. The uncertainty procedure is still an execution-protocol requirement; the picture does not supply one.
 
+**Apply the rule at the boundary.** Keep the illustrative sensitivity margin fixed at 0.01 and vary only an externally justified interval for the policy contrast:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Interval</th><th>Decision</th><th>Reason</th></tr></thead><tbody><tr><td>[−0.009, +0.009]</td><td>Below useful margin</td><td>Strictly inside the band</td></tr><tr><td>[−0.010, +0.009]</td><td>Inconclusive</td><td>Touches a boundary</td></tr><tr><td>[+0.011, +0.020]</td><td>Material sensitivity</td><td>Strictly above +0.010</td></tr></tbody></table>
+
+These are hypothetical inputs to `interval_decision`, not uncertainty estimates for the proposed experiment. The function applies a declared rule; it cannot justify how the interval was estimated. Preserve sufficient numerical precision before checking the boundary: a rounded display is not the decision input.
+
+**Transfer the trace.** Change only the last interval's lower endpoint to +0.010. The decision becomes inconclusive, despite the positive mean you might imagine inside it. This lesson deliberately uses strict boundaries; do not import the inclusive numerical-parity gates used elsewhere in the course.
+
+
 [RelArena](https://arxiv.org/html/2608.16319v2) already provides standardized relational comparisons. The candidate contribution is a measured sensitivity study with documented information assumptions, not benchmarking itself or fixing one cache key.
 
 ## 3 · Direction two: separate the prior from the encoder

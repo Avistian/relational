@@ -40,7 +40,19 @@ def inline_review(s):
     # Definition-only reminders remain useful: remove the testing instruction.
     return re.sub(r'^(?:<strong>|\*\*)?(?:Retrieve three prerequisites first|Recall before reading|Recall before tracing)[.:](?:</strong>|\*\*)?\s*','Prerequisites. ',s,flags=re.I)
 
+RESIDUAL_OPENING_PROMPTS = ['Close the references and answer: a graph predictor sees customers and their orders; a tree sees only customer age. The graph predictor scores higher. Have we isolated the value of graph computation?', 'Before reading further, answer from memory: which records are legal at a prediction cutoff? Does an old event date guarantee that its label was known? Can a full aggregate answer every future question about its source rows?', 'Recall B06: what must stay fixed when comparing priors? Recall L074: what do row-graph edges represent? Recall B05: may a query label enter its retrieved context?']
+
+def remove_residual_openings(text):
+    # Exact legacy prompts: do not classify every prediction exercise as a review.
+    if RESIDUAL_OPENING_PROMPTS[0] in text:
+        text=text.replace('1 · Predict before reading','1 · Define the comparison unit')
+        text=re.sub(r'<details><summary>Check your explanation</summary><p>No\. The graph predictor also received additional information\..*?</p></details>', '', text, flags=re.S)
+    for prompt in RESIDUAL_OPENING_PROMPTS:
+        text=text.replace('<p>'+prompt+'</p>','').replace(prompt,'')
+    return re.sub(r'<noscript>\s*</noscript>', '', text)
+
 def strip_html(text):
+    text=remove_residual_openings(text)
     # These sections contain only the opening review, not model retrieval.
     text=re.sub(r'<section\b(?=[^>]*\bid=["\x27](?:retrieval|recall)["\x27])[^>]*>.*?</section>', '',text,flags=re.S|re.I)
     heads=list(re.finditer(r'<h([123])\b[^>]*>(.*?)</h\1>',text,re.S|re.I))
@@ -72,6 +84,7 @@ def strip_html(text):
     return reminders(text)
 
 def strip_markdown(text):
+    text=remove_residual_openings(text)
     text=re.sub(r'\[\[WARMUP\]\]\s*','',text)
     heads=list(re.finditer(r'^#{1,2} (.+)$',text,re.M));edits=[]
     for i,h in enumerate(heads):

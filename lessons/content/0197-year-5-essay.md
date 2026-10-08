@@ -6,6 +6,8 @@
 
 **Your win:** write a foundation-model landscape essay with one defensible conclusion and a concrete condition that would change your mind. Read the core in 15 minutes, then spend 30–45 minutes drafting. This is rehearsal for choosing a Year 6 research direction, not a completed Year 5 exit exam.
 
+## 1 · Choose the scope of your argument
+
 [[STATUS]]
 
 
@@ -40,6 +42,15 @@ The planned L170b synthesis is not yet a standalone lesson. The following map su
 **A relational prior need not mean graph-native inference.** RDB-PFN trains on synthetic relational tasks and consumes DFS-linearized inputs. [RDB-PFN §5](https://arxiv.org/html/2603.03805v5). RDBLearn combines aggregation with an existing tabular model. “Training-free” here does not erase that backend's pretraining, feature construction or inference costs. [RDBLearn §3](https://arxiv.org/html/2602.18495v1).
 
 **Worked query trace.** Predict whether customer Ada will churn after day 30. Her orders before the cutoff are known; her future churn label is hidden. A graph model combines Ada's row with eligible order rows. A DFS pipeline may replace the orders with count and sum columns, then pass Ada and labeled support rows to a predictor. RDB-PFN and RDBLearn can share that feature representation while differing in the prior learned before this task. If the summaries discard order sequence, they cannot recover that sequence merely by using a larger predictor. This does not prove sequence matters for this target.
+
+**Make the information loss concrete.** For two hypothetical customers, keep event times day 10 and day 20 fixed and swap amounts. The query cutoff is day 30. Define an authored toy target to be 1 exactly when the latest historical amount exceeds 2:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Customer</th><th>Amounts at days 10,20</th><th>Count, sum</th><th>Toy target</th></tr></thead><tbody><tr><td>Ada</td><td>1,3</td><td>2,4</td><td>1</td></tr><tr><td>Bo</td><td>3,1</td><td>2,4</td><td>0</td></tr></tbody></table>
+
+A deterministic predictor receiving only count and sum gets the same input for both customers, so it cannot assign them different predictions. This particular feature map loses information needed by this particular target. It does not show that a GNN necessarily retains or learns the order.
+
+**Transfer the trace.** Add one legal feature: the latest amount before cutoff. The feature vectors become `(2,4,3)` and `(2,4,1)`, resolving the collision without changing the predictor family. Your essay must therefore distinguish “this summary is insufficient” from “all tabular representations are insufficient.” For a target depending only on the sum, the original collision need not matter at all.
+
 
 **Write a prediction:** which comparison would isolate the value of relational information? Hold the predictor fixed and compare target-only features with legal relational summaries. Comparing two systems that both use related rows answers a different question.
 

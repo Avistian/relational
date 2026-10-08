@@ -33,7 +33,7 @@ d=r['paired_rdbpfn_minus_tabicl'];results+=f"\nRDB-PFN minus TabICL: **{d['mean'
 prose=(R/'lessons/content'/(S+'.md')).read_text()
 for key,value in dict(STATUS=status,ARCHITECTURE=figure,RESULTS=results).items():prose=prose.replace('[['+key+']]',value)
 def doc(title,body,scripts=False):
- body=body.replace('<table>','<div class="exit-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="exit-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table\1>',body).replace('</table>','</table></div>')
  js=''.join('<script src="../assets/'+name+'.js"></script>' for name in ['retrieval-pool','retrieval-bank','predict','teachback','year-five-exit']) if scripts else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/year-five-exit.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav>'+body+'</article>'+js+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Lesson 200 — Year 5 exit exam',render(prose),True))
@@ -107,6 +107,13 @@ def notebook(solution):
  code('fresh_evaluator_source = '+repr((P/'_run_l166.py').read_text())+'\nprint(fresh_evaluator_source)')
  book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python','version':'3.12'}})
  for i,c in enumerate(book.cells):c['id']='l200-'+str(i)
+ path=P/'solutions'/(S+'.ipynb')
+ if solution and path.exists():
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  return book
 nb.write(notebook(False),P/(S+'.ipynb'));nb.write(notebook(True),P/'solutions'/(S+'.ipynb'))
 print('Built L200; archive bytes',len(payload))

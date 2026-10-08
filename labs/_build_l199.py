@@ -27,7 +27,7 @@ replay='''| Evidence | Complete scope | Result boundary |
 prose=(R/'lessons/content'/(S+'.md')).read_text();memo=(E/'worked-memo.md').read_text()
 for k,v in dict(STATUS=status,FIGURE=figure,REPLAY=replay,MEMO=memo).items():prose=prose.replace('[['+k+']]',v)
 def doc(title,body,scripts=False):
-    body=body.replace('<table>','<div class="direction-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>').replace('</table>','</table></div>')
+    body=re.sub(r'<table([^>]*)>',r'<div class="direction-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table\1>',body).replace('</table>','</table></div>')
     return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/direction-selection.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav>'+body+'</article>'+('<script src="../assets/direction-selection.js"></script>' if scripts else '')+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Lesson 199 — Select primary direction',render(prose),True))
 reference='''# Select a primary direction · field guide
@@ -114,6 +114,13 @@ def notebook(solution):
     md('## Revisit and discuss\n\nTomorrow reconstruct the contrast without notes; in seven days defend the strongest alternative; in thirty days revisit the decision with new evidence. Ask the agent about any unclear step. Source: [COS preregistration guidance](https://www.cos.io/initiatives/prereg). Old replay remains exploratory evidence; no registration was submitted. Fresh model reproduction stays INCOMPLETE_SOURCE_PREPROCESSING_GATE; learner PENDING_WRITTEN_DEFENSE; live Colab NOT_CHECKED.')
     book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
     for i,c in enumerate(cells):c.id=('solution' if solution else 'student')+'-l199-'+str(i)
+    path=P/'solutions'/(S+'.ipynb')
+    if solution and path.exists():
+     old=nb.read(path,4);book.metadata=old.metadata
+     previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+     if [c.source for c in previous]==[c.source for c in current]:
+      for prior,c in zip(previous,current):
+       c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
     return book
 nb.write(notebook(False),P/(S+'.ipynb'));nb.write(notebook(True),P/'solutions'/(S+'.ipynb'))
 print('Built lesson, reference, SVG, ZIP and two portable notebooks')

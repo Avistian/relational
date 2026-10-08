@@ -22,4 +22,14 @@ class OpeningPolicy(unittest.TestCase):
  def test_static_review_section(self):
   source='<section id="retrieval"><h2>Retrieve before reading</h2><p>Why?</p></section><section id="model"><p>Model content</p></section>'
   self.assertEqual(strip_html(source),'<section id="model"><p>Model content</p></section>')
+ def test_static_bridge_review_remnants(self):
+  source='<h2>1 · Fixed weights do not identify a predictor</h2><p>Before reading further, answer from memory: which records are legal at a prediction cutoff? Does an old event date guarantee that its label was known? Can a full aggregate answer every future question about its source rows?</p><p>Write the deployed prediction as:</p>'
+  result=strip_html(source)
+  self.assertNotIn('answer from memory',result)
+  self.assertIn('Write the deployed prediction as:',result)
+ def test_nojs_bridge_recall(self):
+  source='<noscript><p>Recall B06: what must stay fixed when comparing priors? Recall L074: what do row-graph edges represent? Recall B05: may a query label enter its retrieved context?</p></noscript><p>Prerequisites. An embedding is a vector.</p>'
+  result=strip_markdown(source)
+  self.assertNotIn('Recall B06',result)
+  self.assertIn('Prerequisites. An embedding is a vector.',result)
 if __name__=='__main__':unittest.main()

@@ -25,6 +25,7 @@ for path in [P/'relkit/community_l196.py',P/'_diagnostic_l196.py',P/'_report_l19
 paths=[R/'lessons'/(S+'.html'),R/'reference/community-engagement.html',P/(S+'.ipynb'),E/'reproducer.zip',E/'question-draft.md']
 before={p:p.read_bytes() for p in paths};executed=(P/'solutions'/(S+'.ipynb')).read_bytes()
 subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l196.py')],cwd=R,check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 rebuilt=nbformat.read(P/'solutions'/(S+'.ipynb'),4)
 assert '\n\n'.join(c.source for c in rebuilt.cells if c.cell_type=='code')==solcode
 (P/'solutions'/(S+'.ipynb')).write_bytes(executed)

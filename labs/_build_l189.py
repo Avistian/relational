@@ -36,7 +36,7 @@ def prose(portable=False):
  return text
 
 def doc(title,body,interactive=False):
- markup=render(body).replace('<table>','<div class="route-scroll" tabindex="0"><table>').replace('</table>','</table></div>')
+ markup=re.sub(r'<table([^>]*)>',r'<div class="route-scroll" tabindex="0"><table\1>',render(body)).replace('</table>','</table></div>')
  scripts=['predict','checklist','teachback','research-priority','l189-lesson'] if interactive else []
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lesson 189 — '+title+'</title>'+''.join('<link rel="stylesheet" href="../assets/'+s+'.css">' for s in ['lesson','atomic-route','checkpoint','research-priority'])+'</head><body class="checkpoint rp-lesson"><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav><header><p class="route-kicker">Year 5 · Quarter 3 · Lesson 189</p><h1>'+title+'</h1><p class="subtitle">From a promising topic to a defensible next experiment</p></header>'+markup+'</article>'+''.join('<script src="../assets/'+s+'.js"></script>' for s in scripts)+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Identify three open problems',prose(),True))
@@ -109,8 +109,11 @@ def make(solution):
  for i,c in enumerate(book.cells):c['id']=hashlib.sha256((str(i)+c.source).encode()).hexdigest()[:12]
  dest=P/('solutions' if solution else '')/(S+'.ipynb');dest.parent.mkdir(exist_ok=True)
  if solution and dest.exists():
-  old=nb.read(dest,4)
-  if [c.source for c in old.cells]==[c.source for c in book.cells]:return
+  old=nb.read(dest,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  nb.write(book,dest)
 make(False);make(True)
 print('Built lesson, reference, shortlist and portable notebooks')

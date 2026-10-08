@@ -21,6 +21,7 @@ for path in [P/'relkit/exit_l200.py',P/'_audit_l200.py',P/'_test_l200.py',P/'_ve
 paths=[R/'lessons'/(S+'.html'),R/'reference/year-5-exit-exam.html',P/(S+'.ipynb'),E/'reproducer.zip',P/'figures/l200/architecture.svg']
 before={p:p.read_bytes() for p in paths};executed=(P/'solutions'/(S+'.ipynb')).read_bytes()
 subprocess.run([sys.executable,str(P/'_build_l200.py')],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 rebuilt=nbformat.read(P/'solutions'/(S+'.ipynb'),4);assert '\n\n'.join(c.source for c in rebuilt.cells if c.cell_type=='code')==code
 (P/'solutions'/(S+'.ipynb')).write_bytes(executed)
 assert all(p.read_bytes()==b for p,b in before.items()),'Nondeterministic build'
@@ -45,7 +46,7 @@ with sync_playwright() as pw:
    states+=1
   board.locator('button').click();assert [selects.nth(i).input_value() for i in range(3)]==['PASS','PENDING','PENDING']
   selects.nth(0).focus();page.keyboard.press('ArrowDown');assert selects.nth(0).input_value()=='FAIL';board.locator('button').click()
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   predict=page.locator('#predict200');assert predict.locator('button').count()>0
   predict.locator('button').first.click()
   # Check prediction and teachback using public rendered controls.

@@ -6,6 +6,8 @@
 
 **Your win:** build a dated, auditable KumoRFM-2 versus open-method gap table and defend exactly what it means. Read the core in about 15 minutes; use the notebook for implementation and the expandable tables for audit detail. This supports our mission: make a relational-learning research claim that a skeptical reader can check.
 
+## 1 · Fix the scope of the comparison
+
 [[STATUS]]
 
 
@@ -42,6 +44,15 @@ All included values are **paper-reported test results**; we did not independentl
 
 - **Single method:** which eligible method has the best aggregate across all tasks in this table? This is a retrospective test-set summary; a deployable choice needs validation data.
 - **Taskwise oracle:** what if we picked the best eligible test result separately for every task? This is an optimistic envelope, not one trained model or a valid selection policy.
+
+**Trace an oracle that no single method achieves.** Suppose two hypothetical tasks have published AUROCs in percent units:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Method</th><th>Task 1</th><th>Task 2</th><th>Mean</th></tr></thead><tbody><tr><td>Target</td><td>75</td><td>75</td><td>75</td></tr><tr><td>Open A</td><td>90</td><td>50</td><td>70</td></tr><tr><td>Open B</td><td>50</td><td>90</td><td>70</td></tr><tr><td>Taskwise oracle</td><td>90 (A)</td><td>90 (B)</td><td>90</td></tr></tbody></table>
+
+The target's gap is +5 points against the best single open method and −15 against the oracle. No score changed; the comparison rule changed. The oracle chooses A after seeing Task 1's test result and B after seeing Task 2's, so it is not a validated selection procedure.
+
+**Transfer the trace.** Make B's Task 1 result missing. Under the complete-coverage rule, exclude B before computing either comparison: A is the only eligible method, so both gaps become +5. Retaining B only where it looks strong would silently change the coverage contract.
+
 
 Require complete coverage. A missing task is not a zero or a loss. Do not let a method evaluated on one easy task compete against an all-task average.
 

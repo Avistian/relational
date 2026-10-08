@@ -21,7 +21,7 @@ for name in ['relkit/setup_l192.py','_audit_l192.py','_test_l192.py']:
   if isinstance(n,ast.FunctionDef):assert ast.dump(n,include_attributes=False)==nodes[n.name],n.name
 original=next(n for n in ast.parse((P/'sources/l192/rdblearn/rdblearn/preprocessing.py').read_text()).body if isinstance(n,ast.ClassDef) and n.name=='SafeLabelEncoderTransformer')
 assert nodes[original.name]==ast.dump(original,include_attributes=False)
-assert sum(c.source.count('data:image/png;base64,') for c in student.cells)==3
+assert sum(c.source.count('data:image/png;base64,') for c in student.cells)==4
 rows=json.loads((P/'evidence/l192/packet/queries.json').read_text());assert len({r['entity'] for r in rows})==len(rows)==13779
 errors=[];states=0
 with sync_playwright() as pw:
@@ -43,7 +43,7 @@ with sync_playwright() as pw:
   clock.locator('[data-day]').focus();page.keyboard.press('ArrowRight');assert json.loads(clock.get_attribute('data-result'))['day']==181
   clock.locator('[data-reset]').click();encoding.locator('[data-category]').focus();page.keyboard.press('ArrowDown');assert json.loads(encoding.get_attribute('data-result'))['category']=='c'
   encoding.locator('[data-reset]').click()
-  assert page.locator('#warmup').inner_text().strip()
+  assert page.locator('#warmup').count()==0
   for box in page.locator('#checklist input').all():box.check()
   assert 'gate remains failed' in page.locator('#checklist').inner_text()
   assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'Horizontal page overflow'
@@ -55,7 +55,7 @@ with sync_playwright() as pw:
   encoding.screenshot(path=f'/tmp/l192-encoding-{width}.png');clock.screenshot(path=f'/tmp/l192-clock-{width}.png')
  page.emulate_media(media='print');assert page.locator('#encoding .rc-controls').is_hidden();page.pdf(path='/tmp/l192-print.pdf',format='A4',print_background=True)
  nojs=browser.new_context(java_script_enabled=False);np=nojs.new_page();np.goto((R/'lessons'/(S+'.html')).as_uri());assert 'Intervene mentally' in np.inner_text('body')
- page.emulate_media(media='screen');page.set_viewport_size({'width':1000,'height':1000});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==3
+ page.emulate_media(media='screen');page.set_viewport_size({'width':1000,'height':1000});page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==4
  page.locator('figure').nth(2).screenshot(path='/tmp/l192-notebook-figure.png');browser.close()
 assert not errors,errors
 class Links(HTMLParser):
@@ -83,6 +83,7 @@ server.shutdown()
 paths=[R/'lessons'/(S+'.html'),R/'reference/open-fm-setup-data.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+sorted((P/'figures/l192').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for name in ['_figures_l192.py','_build_l192.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/name)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic build'
-result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=3,mobile_reflow_figures=3,local_links=links,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=4,mobile_reflow_figures=3,local_links=links,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l192_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

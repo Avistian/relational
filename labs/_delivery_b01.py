@@ -22,6 +22,7 @@ paths=[R/'lessons'/(S+'.html'),R/'reference/b01-comparison-contract.html',P/(S+'
 before={p:p.read_bytes() for p in paths};executed=solution_path.read_bytes()
 try:
  subprocess.run([sys.executable,str(P/'_build_b01.py')],check=True,capture_output=True)
+ subprocess.run([sys.executable,str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
  rebuilt=nbformat.read(solution_path,4);assert '\n\n'.join(c.source for c in rebuilt.cells if c.cell_type=='code')==code
  assert all(p.read_bytes()==b for p,b in before.items()),'Non-deterministic builder'
 finally:solution_path.write_bytes(executed)
@@ -71,7 +72,7 @@ try:
   page.goto(base+'index.html');page.locator('#lesson-nav a[href="lessons/'+S+'.html"]').wait_for()
   assert 'LESSON B01' in page.locator('#lesson-nav').inner_text() and 'YEAR 5 → 6 BRIDGE' in page.locator('#lesson-nav').inner_text()
   assert 'LESSON 0200' in page.locator('#lesson-nav').inner_text()
-  page.goto(base+'notebooks.html');page.locator('#lab-B01').wait_for();assert page.locator('#nb-list li').first.get_attribute('id')=='lab-B01'
+  page.goto(base+'notebooks.html');page.locator('#lab-B01').wait_for();assert page.locator('#lab-B01 a[href="labs/html/'+S+'.html"]').count()==1
   page.goto(base+'labs/html/'+S+'.html');assert 'COMPLETE_REPLAY' in page.locator('body').inner_text()
   assert page.locator('img').first.evaluate('(el)=>el.complete&&el.naturalWidth>0')
   page.locator('img').first.screenshot(path=str(V/'notebook-flow.png'))

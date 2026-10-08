@@ -14,10 +14,7 @@ You have seen models, temporal audits, serving simulations and privacy mechanism
 
 [Lesson 181](0181-relbench-v2-autocomplete.html) supplies the autocomplete contract. [Lesson 182](0182-rdb-pfn-composite-message-passing.html) separates a reproduced comparison from a proposed hybrid. [Lesson 188](0188-systematic-literature-tracking.html) separates collected papers from complete discovery. [Lesson 189’s draft problem-ranking work](0189-identify-open-problems.html) is an optional bridge; the three cards below make this checkpoint self-contained, without assuming you completed it.
 
-**Predict:** a result rounds to a paper's table, but one research search failed. Which claim is justified?
-
-<div id="checkpoint-quiz"></div>
-<noscript>A: “This saved comparison was replayed.” B: “This new contribution is novel.” A is supported; B requires a related-work argument the replay cannot supply.</noscript>
+## 1 · State the claim and its population
 
 **Vocabulary for the checkpoint.** A claim is a statement the evidence may support. An **estimand** is the exact quantity an experiment aims to estimate. A **paired contrast** compares outcomes for matched queries and training seeds, so the comparison shares those sources of variation. A **falsifier** is a result specified in advance that would count against the claim. The proposed study below is a plan, not a completed experiment.
 
@@ -38,6 +35,15 @@ The chosen published comparison is **RDB-PFN v5 Table 9, rel-f1/driver-dnf**, wi
 [[FIG:paired]]
 
 **Write this:** “On the frozen F1 task and paired support draws, the saved RDB-PFN mean AUROC exceeds the saved TabICL mean by 0.004369; the difference is positive in 6/10 draws.” This is descriptive variation over support draws, not a confidence interval for performance on new databases. [Executable replay](../labs/_replay_l190.py) · [independent checks](../labs/_verify_l190_results.json).
+
+**Read average gain and win count separately.** These invented ten-draw contrasts are AUROC differences, model A minus model B, not additional benchmark runs:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Paired differences</th><th>A wins</th><th>Mean</th></tr></thead><tbody><tr><td>Nine +0.001; one −0.020</td><td>9/10</td><td>−0.0011</td></tr><tr><td>One +0.020; nine −0.001</td><td>1/10</td><td>+0.0011</td></tr></tbody></table>
+
+In the first row, `(9 × 0.001 − 0.020)/10 = −0.0011`: frequent small gains do not outweigh one larger loss. The second reverses every sign. Win count records frequency; mean records signed magnitude. Reporting both reveals behavior that either alone hides. Neither table row establishes transfer to a new database.
+
+**Transfer the trace.** Replace the first row's −0.020 by −0.009. The mean becomes zero while A still wins nine draws. Explain why “usually wins” and “positive average gain” are different claims before writing the actual frozen result above.
+
 
 **Do not infer:** novel hybrid, database transfer, fresh training, or general superiority. Composite message passing already exists in [RelGNN](https://arxiv.org/html/2502.06784v2). Combining two existing ideas needs a precise insertion point, compatible training and a matched control.
 

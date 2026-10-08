@@ -47,8 +47,8 @@ with sync_playwright() as pw:
  page.emulate_media(media='print');assert page.locator('#priority .rp-controls').is_hidden()
  page.pdf(path='/tmp/l189-print.pdf',format='A4',print_background=True)
  nojs=browser.new_context(java_script_enabled=False);np=nojs.new_page();np.goto((R/'lessons'/(S+'.html')).as_uri())
- assert 'Equal weights: temporal 18.67' in np.inner_text('body');assert np.locator('details').count()==3
- np.locator('details').first.locator('summary').click();assert 'Minimum full comparison' in np.locator('details').first.inner_text()
+ assert 'Equal weights: temporal 18.67' in np.inner_text('body');assert np.locator('details').count()==4
+ np.locator('details').nth(1).locator('summary').click();assert 'Minimum full comparison' in np.locator('details').nth(1).inner_text()
  page.emulate_media(media='screen');page.set_viewport_size({'width':1000,'height':1000});page.goto((P/'html'/(S+'.html')).as_uri());page.screenshot(path='/tmp/l189-notebook.png')
  assert page.locator('img[src^="data:image/png"]').count()==2
  browser.close()
@@ -80,6 +80,7 @@ for path in [P/'l189-reproduction.md',P/'evidence/l189/report.md',P/'evidence/l1
 paths=[R/'lessons'/(S+'.html'),R/'reference/identify-open-problems.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb'),P/'evidence/l189/report.md',P/'evidence/l189/shortlist.md']+sorted((P/'figures/l189').iterdir())
 before=[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths]
 for script in ['_figures_l189.py','_build_l189.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/script)],check=True,capture_output=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before==[hashlib.sha256(p.read_bytes()).hexdigest() for p in paths],'Nondeterministic artifacts'
 result=dict(status='PASS',browser_widths=[1200,375],interactive_states=states,python_javascript_parity='PASS',keyboard_reset='PASS',no_js='PASS',print='PASS',inline_source_parity='PASS',portable_figures=2,local_links=count,deterministic_build='PASS',manifest_galleries='PASS',javascript_errors=errors,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l189_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

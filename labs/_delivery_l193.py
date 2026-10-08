@@ -45,7 +45,7 @@ with sync_playwright() as pw:
   host.screenshot(path=f'/tmp/l193-coverage-{width}.png');cat.screenshot(path=f'/tmp/l193-category-{width}.png');page.locator('figure').first.screenshot(path=f'/tmp/l193-architecture-{width}.png');page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l193-top-{width}.png')
  page.emulate_media(media='print');assert host.locator('.controls').evaluate('(x)=>getComputedStyle(x).display')=='none'
  context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert '0 / 630' in pg.locator('body').inner_text();assert pg.locator('noscript').count()==3;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
- page.emulate_media(media='screen');page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==3;page.locator('img[src^="data:image/png"]').first.screenshot(path='/tmp/l193-notebook.png')
+ page.emulate_media(media='screen');page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==4;page.locator('img[src^="data:image/png"]').first.screenshot(path='/tmp/l193-notebook.png')
  server=ThreadingHTTPServer(('127.0.0.1',0),functools.partial(SimpleHTTPRequestHandler,directory=str(R)));threading.Thread(target=server.serve_forever,daemon=True).start()
  try:
   for name in ['index.html','notebooks.html']:
@@ -64,6 +64,7 @@ for name in ['lessons/'+S+'.html','reference/open-fm-full-task-set.html']:
   assert (path.parent/unquote(part.path)).resolve().is_file(),url;links+=1
 outputs=[R/'lessons'/(S+'.html'),R/'reference/open-fm-full-task-set.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+list((P/'figures/l193').glob('*'))
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs};subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l193.py')],check=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs},'Nondeterministic builder'
-result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print=True,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,portable_figures=3,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
+result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print=True,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,portable_figures=4,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l193_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

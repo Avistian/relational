@@ -38,13 +38,12 @@ with sync_playwright() as pw:
    for i,v in enumerate(row['weights']):rank.locator('[data-weight="'+str(i)+'"]').select_option(str(v))
    assert rank.get_attribute('data-leaders')==','.join(row['leaders']);assert json.loads(rank.get_attribute('data-scores'))==row['scores'];states+=1
   rank.locator('[data-reset]').click();assert json.loads(rank.get_attribute('data-scores'))==ranked[0]['scores']
-  quiz=page.locator('#checkpoint-quiz');assert len(set(len(s.split()) for s in quiz.locator('button').all_inner_texts()))==1
-  quiz.locator('button').first.click();assert 'correct' in quiz.locator('.quiz-feedback').get_attribute('class')
+  assert page.locator('#checkpoint-quiz button').count()==0
   assert page.locator('figure img').evaluate_all('(xs)=>xs.length===2&&xs.every(x=>x.complete&&x.naturalWidth>0)')
   assert not page.evaluate('document.documentElement.scrollWidth>innerWidth+1'),f'Overflow {width}'
   host.screenshot(path=f'/tmp/l190-claim-{width}.png');rank.screenshot(path=f'/tmp/l190-rank-{width}.png');page.evaluate('scrollTo(0,0)');page.screenshot(path=f'/tmp/l190-top-{width}.png')
  page.emulate_media(media='print');assert host.locator('.controls').evaluate('(x)=>getComputedStyle(x).display')=='none'
- context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert '21,060' in pg.locator('body').inner_text();assert pg.locator('noscript').count()==3;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
+ context=browser.new_context(java_script_enabled=False,viewport={'width':375,'height':900});pg=context.new_page();pg.goto((R/'lessons'/(S+'.html')).as_uri());assert '21,060' in pg.locator('body').inner_text();assert pg.locator('noscript').count()==2;assert not pg.evaluate('document.documentElement.scrollWidth>innerWidth+1');context.close()
  page.emulate_media(media='screen');page.goto((P/'html'/(S+'.html')).as_uri());assert page.locator('img[src^="data:image/png"]').count()==2;page.locator('img[src^="data:image/png"]').first.screenshot(path='/tmp/l190-notebook.png')
  page.goto((R/'reference/research-gap-document.html').as_uri());page.set_viewport_size({'width':1100,'height':1000});assert page.locator('.sheet').count()==5
  for i in range(5):page.locator('.sheet').nth(i).screenshot(path=f'/tmp/l190-dossier-{i+1}.png')
@@ -78,6 +77,7 @@ for name in ['lessons/'+S+'.html','reference/research-gap-checkpoint.html','refe
   assert (path.parent/unquote(part.path)).resolve().is_file(),url;links+=1
 outputs=[R/'lessons'/(S+'.html'),R/'reference/research-gap-checkpoint.html',R/'reference/research-gap-document.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+list((P/'figures/l190').glob('*'))
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs};subprocess.run([str(R/'.venv/bin/python'),str(P/'_build_l190.py')],check=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs},'Nondeterministic builder'
 result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print=True,pdf_pages=5,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,portable_figures=2,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l190_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

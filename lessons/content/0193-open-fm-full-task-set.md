@@ -10,7 +10,7 @@ Our mission is to test whether relational structure adds value. A good result on
 
 
 
-<details><summary>Check after answering</summary><p>A complete key includes entity and cutoff; the same entity can recur. Validation selects a configuration. Another support seed repeats within-task sampling; it does not create another independent database.</p></details>
+
 
 [Lesson 178](0178-fair-model-comparison.html) introduced this relational-features-plus-tabular-model approach. [Lesson 190](0190-research-gap-checkpoint.html) separated evidence from a research claim. Today's new difficulty is accounting: the denominator is part of the experiment.
 
@@ -59,6 +59,15 @@ The browser exercise below is synthetic. Its eight task scores are `[.9,.9,.9,.5
 <noscript>Synthetic example: three selected tasks average .900; all eight average .650. Until all eight are present, the full-suite mean is withheld. Actual L193 model coverage remains 0/21.</noscript>
 
 **Equal task weighting:** average each task's seed mean once. Do not pool every prediction row; large tasks would dominate. Tasks within one database may also be dependent, so an across-task SD is descriptive rather than a database-transfer confidence interval.
+
+**Expose the weighting decision.** Imagine two complete tasks with seed-mean AUROCs 0.90 and 0.50. The first has 100 test queries and the second 900:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Summary</th><th>Calculation</th><th>Value</th></tr></thead><tbody><tr><td>Equal task weights</td><td>(0.90 + 0.50)/2</td><td>0.70</td></tr><tr><td>Query-count weights</td><td>(100 × 0.90 + 900 × 0.50)/1,000</td><td>0.54</td></tr><tr><td>Drop second task</td><td>Full-suite mean withheld</td><td>Incomplete</td></tr></tbody></table>
+
+The first asks about a uniformly selected task; the second favors tasks with more queries. The second is a weighted mean of per-task AUROCs, **not** AUROC computed after pooling all predictions: pooled AUROC also compares positives and negatives across tasks and cannot be recovered from these two scalars. The frozen suite uses the first rule.
+
+**Transfer the trace.** Duplicate the second task's query rows while holding its AUROC fixed. Equal-task mean stays 0.70; query-count-weighted mean becomes `(90 + 900)/1,900 ≈ 0.5211`. A bookkeeping change has altered the latter summary without improving or degrading either task's ranking.
+
 
 **Units matter:** AUROC is dimensionless. Raw MAEs for money, counts and rates are not commensurate. Given verified baseline errors `b_t`, normalized MAE is `MAE_t / b_t`, then averaged across tasks. Example: errors `[5,.2]` and baseline errors `[10,.1]` yield normalized errors `[.5,2]`, mean `1.25`. The smaller raw error can be worse relative to its baseline.
 

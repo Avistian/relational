@@ -10,7 +10,7 @@
 
 ## 1 · Fixed weights do not identify a predictor
 
-Before reading further, answer from memory: which records are legal at a prediction cutoff? Does an old event date guarantee that its label was known? Can a full aggregate answer every future question about its source rows?
+
 
 Write the deployed prediction as:
 

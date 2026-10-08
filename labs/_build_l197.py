@@ -48,7 +48,7 @@ essay=(E/'worked-essay.md').read_text();essay_embed=essay.replace('](report.json
 prose=(R/'lessons/content'/(S+'.md')).read_text()
 for key,value in dict(STATUS=status,FIGURE=figure,GAPS=gaps,REPLAY=replay,RUBRIC=rubric,ESSAY=essay_embed).items():prose=prose.replace('[['+key+']]',value)
 def doc(title,body,scripts=False):
- body=body.replace('<table>','<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="repro-table" tabindex="0" role="region" aria-label="Scrollable evidence table"><table\1>',body).replace('</table>','</table></div>')
  tags=''.join('<script src="../assets/'+x+'.js"></script>' for x in ['retrieval-pool','retrieval-bank','predict','teachback','arch-family-viz','landscape-essay']) if scripts else ''
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/landscape-essay.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html">Curriculum</a></nav>'+body+'</article>'+tags+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Lesson 197 — Year 5 landscape essay',render(prose),True))
@@ -133,6 +133,13 @@ def notebook(solution):
  md('## Author reference essay — compare only after your own draft\n\n'+essay.replace('](report.json)','](https://avistian.github.io/relational/labs/evidence/l197/report.json)').replace('](../l195/falsification-brief.md)','](https://avistian.github.io/relational/labs/evidence/l195/falsification-brief.md)'))
  book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'},'language_info':{'name':'python'}})
  for idx,cell in enumerate(book.cells):cell.id=('solution' if solution else 'student')+'-l197-'+str(idx)
+ path=P/'solutions'/(S+'.ipynb')
+ if solution and path.exists():
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
  return book
 nb.write(notebook(False),P/(S+'.ipynb'));nb.write(notebook(True),P/'solutions'/(S+'.ipynb'))
 print('Built lesson, reference, SVG, ZIP, student and solution')

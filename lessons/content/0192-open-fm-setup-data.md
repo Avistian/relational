@@ -74,6 +74,15 @@ The source failure is a change in **meaning**, not merely a different numeric sc
 
 **Measured evidence.** We executed the complete original `TabularPreprocessor`, including AutoGluon feature generation, on those synthetic inputs. All three known-category codes changed; the numeric control column stayed unchanged. A fresh encoder gave code 0 for `b` alone and code 1 for the same `b` when its batch also contained `a`. A separate original-encoder execution checked 100 generated vocabularies. [Recorded intervention](../labs/evidence/l192/packet/preprocessing.json) · [Independent verification](../labs/_verify_l192_results.json).
 
+**Add a control that should not shift the code.** Start from a fresh fitted encoder for each row below; save support encodings before transforming the query batch. The known query is always `b`:
+
+<table class="compact-trace" style="min-width:0;border-collapse:separate;border-spacing:3px"><thead><tr><th>Query batch</th><th>Stored support b</th><th>Query b</th></tr></thead><tbody><tr><td>b alone</td><td>0</td><td>0</td></tr><tr><td>z, b</td><td>0</td><td>0</td></tr><tr><td>a, b</td><td>0</td><td>1</td></tr></tbody></table>
+
+Both `z` and `a` are unseen. Only `a` sorts before the existing vocabulary and shifts `b`. This localizes the failure to inserting and re-sorting categories; merely detecting an unknown category is not enough to predict a shift. No backend prediction is needed to demonstrate the mismatch.
+
+**Transfer the trace.** Replace `a` with `bb`, which sorts between `b` and `c`. Predict `b→0`, `c→2`, `d→3`. An audit checking only `b` would miss that partial shift. Check every fitted category and retain the unchanged numeric column as a control.
+
+
 **The causal contrast.** Support examples, known query values and numeric values are fixed. The intervention is transforming the unseen category. The measured outcome is the known query representation, not model accuracy. The widget’s frozen-vocabulary option illustrates a possible repair contract; no repaired RDBLearn benchmark was run.
 
 > **Scope check.** This is an executed source-level counterexample on synthetic categories. It does not establish how often the selected task produces such categories, the size or direction of an AUROC effect, or that the authors’ historical run used this exact code. We stop because the released candidate pipeline fails a required input-consistency invariant.

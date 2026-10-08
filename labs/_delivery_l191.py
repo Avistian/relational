@@ -66,6 +66,7 @@ for name in ['lessons/'+S+'.html','reference/kumorfm2-sota-tracking.html']:
 outputs=[R/'lessons'/(S+'.html'),R/'reference/kumorfm2-sota-tracking.html',P/(S+'.ipynb'),P/'solutions'/(S+'.ipynb')]+list((P/'figures/l191').glob('*'))
 before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs}
 for command in ['_figures_l191.py','_build_l191.py']:subprocess.run([str(R/'.venv/bin/python'),str(P/command)],check=True)
+subprocess.run([str(R/'.venv/bin/python'),str(R/'scripts/refresh_lesson_visuals.py')],check=True,capture_output=True)
 assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in outputs},'Nondeterministic builder'
 result=dict(status='PASS',browser_states=states,widths=[1200,375],keyboard_reset=True,no_js=True,print_media=True,inline_source_parity=True,deterministic_build=True,local_links=links,galleries=True,portable_figures=2,mobile_figures=2,live_colab='NOT_CHECKED',deployment='NOT_CHECKED')
 (P/'_delivery_l191_results.json').write_text(json.dumps(result,indent=2)+'\n');print(result)

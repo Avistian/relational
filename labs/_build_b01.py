@@ -26,7 +26,7 @@ d=r['paired_rdbpfn_minus_tabicl'];results+=f"\nRDB-PFN − TabICL: **{d['mean']:
 prose=(R/'lessons/content'/(S+'.md')).read_text()
 for key,value in dict(FAMILY_EXPLORER=explorer,FAMILY_MATRIX=matrix,FLOW=flow,CONTRACT_WIDGET=widget,RESULTS=results).items():prose=prose.replace('[['+key+']]',value)
 def doc(title,body,script=False):
- body=body.replace('<table>','<div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table>').replace('</table>','</table></div>')
+ body=re.sub(r'<table([^>]*)>',r'<div class="b01-scroll" tabindex="0" role="region" aria-label="Scrollable comparison table"><table\1>',body).replace('</table>','</table></div>')
  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+'</title><link rel="stylesheet" href="../assets/lesson.css"><link rel="stylesheet" href="../assets/comparison-contract.css"></head><body><article><nav><a href="../index.html">Course</a> · <a href="../reference/curriculum.html#research-bridge">Bridge curriculum</a></nav>'+body+'</article>'+('<script src="../assets/comparison-contract.js"></script>' if script else '')+'</body></html>'
 (R/'lessons'/(S+'.html')).write_text(doc('Lesson B01 — Architecture coverage and honest comparison',render(prose),True))
 reference='''# Comparison contract · field guide
@@ -102,5 +102,12 @@ for solution in [False,True]:
  code("submission={'baseline_rationale':'','comparison_unit':'','information_control':'','resource_policy':'','falsification_tests':[],'revision_condition':'','defense':'PENDING_WRITTEN_DEFENSE'}\nPath('b01-submission.json').write_text(json.dumps(submission,indent=2)+'\\n')\nprint('Author checks do not grade the written defense.')")
  for i,c in enumerate(cells):c.id=hashlib.sha256((str(i)+c.source).encode()).hexdigest()[:12]
  book=nb.v4.new_notebook(cells=cells,metadata={'kernelspec':{'display_name':'Python 3','language':'python','name':'python3'}})
- nb.write(book,(P/'solutions' if solution else P)/(S+'.ipynb'))
+ path=(P/'solutions' if solution else P)/(S+'.ipynb')
+ if solution and path.exists():
+  old=nb.read(path,4);book.metadata=old.metadata
+  previous=[c for c in old.cells if c.cell_type=='code'];current=[c for c in book.cells if c.cell_type=='code']
+  if [c.source for c in previous]==[c.source for c in current]:
+   for prior,c in zip(previous,current):
+    c.outputs=prior.outputs;c.execution_count=prior.execution_count;c.metadata=prior.metadata
+ nb.write(book,path)
 print('Built B01 lesson, reference, two portable notebooks and frozen audit archive')
