@@ -108,6 +108,12 @@
       color: var(--muted);
       margin: 0 0 1.5rem;
     }
+    .lesson-search-box { margin: 0 0 1.25rem; font-family: var(--font-sans); }
+    .search-label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+    #lesson-search { width: 100%; max-width: 26rem; box-sizing: border-box; font: inherit; font-size: 0.9rem; padding: 0.5rem 0.7rem; margin-top: 0.25rem; border: 1px solid var(--border); border-radius: 5px; }
+    .search-results { list-style: none; padding: 0; margin: 0.5rem 0 0; font-size: 0.88rem; }
+    .search-results li { margin: 0.3rem 0; }
+    .search-results .note { color: var(--muted); }
     .nav-error { font-size: 0.9rem; color: var(--muted); }
   </style>
 </head>
@@ -128,6 +134,12 @@
   </p>
 
   <div id="continue-nav"></div>
+
+  <div class="lesson-search-box">
+    <label for="lesson-search" class="search-label">Search lessons</label>
+    <input id="lesson-search" type="search" autocomplete="off" placeholder="Title, section or glossary term…">
+    <ul id="lesson-search-results" class="search-results" aria-live="polite"></ul>
+  </div>
 
   <h2>Lessons</h2>
   <div id="lesson-nav"><p class="nav-error">Loading…</p></div>
@@ -169,7 +181,32 @@
     Questions or stuck on a quiz? Ask your teacher in Cursor chat.
   </div>
 </article>
+<script src="assets/search.js"></script>
 <script src="assets/home.js"></script>
 <script>HomeNav.mount({ navId: "lesson-nav", continueId: "continue-nav" });</script>
+<script>
+(function () {
+  var box = document.getElementById("lesson-search");
+  var out = document.getElementById("lesson-search-results");
+  var index = null, failed = false;
+  function note(t) { out.innerHTML = ""; var li = document.createElement("li"); li.className = "note"; li.textContent = t; out.appendChild(li); }
+  function render() {
+    var q = box.value;
+    if (!q.trim()) { out.innerHTML = ""; return; }
+    if (failed) { note("Search index unavailable (open this page over http, not file://)."); return; }
+    if (!index) { note("Loading index…"); return; }
+    var hits = LessonSearch.search(index, q);
+    if (!hits.length) { note("No lessons match."); return; }
+    out.innerHTML = "";
+    hits.slice(0, 20).forEach(function (h) {
+      var li = document.createElement("li"), a = document.createElement("a");
+      a.href = h.url; a.textContent = h.title; li.appendChild(a); out.appendChild(li);
+    });
+  }
+  box.addEventListener("input", render);
+  fetch("assets/search-index.json").then(function (r) { if (!r.ok) throw 0; return r.json(); })
+    .then(function (j) { index = j; render(); }, function () { failed = true; render(); });
+})();
+</script>
 </body>
 </html>
