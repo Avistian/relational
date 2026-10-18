@@ -158,6 +158,22 @@ class IndexHtmlWiring(unittest.TestCase):
             self.assertIn(keep, text)
         self.assertEqual(text.count('id="lesson-search"'), 1)
 
+    def test_index_embedded_so_file_scheme_works(self):
+        text = (ROOT / "index.html").read_text(encoding="utf-8")
+        m = re.search(r'<script type="application/json" id="lesson-search-data">(.*?)</script>', text, re.S)
+        self.assertIsNotNone(m)
+        self.assertEqual(json.loads(m.group(1)), load_index())
+        self.assertNotIn("fetch(", text)
+
+    def test_check_fails_when_embedded_copy_stale(self):
+        tmp = Path(tempfile.mkdtemp())
+        page = tmp / "index.html"
+        page.write_text((ROOT / "index.html").read_text(encoding="utf-8").replace(
+            "Worked example", "Worked exampleX", 1), encoding="utf-8")
+        r = subprocess.run([PY, str(SCRIPT), "--check", "--html", str(page)], cwd=ROOT,
+                           capture_output=True, text=True)
+        self.assertNotEqual(r.returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()
