@@ -1,6 +1,6 @@
 # Human evidence
 
-Source: c4f0719eba859ce6d0fbb254e2cb91001614903e
+Source: a1f7b15a288fb432ef4aa24b28b2ae4a36212c32
 Reviewer: verifier:rel-01
 
 BEFORE failures: 1
@@ -9,7 +9,7 @@ AFTER failures: 0
 ## RED
 ```text
 LEAD_RESULT={"run": 1, "failed": 1, "errors": 0, "skipped": 0}
-FAIL: test_large_publication_exports_use_disk_backed_runner_temp (lead_replay_0.PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp)
+FAIL: test_publication_scratch_uses_supported_step_runner_context (lead_replay_0.PullRequestChecks.test_publication_scratch_uses_supported_step_runner_context)
 FAILED (failures=1)
 ```
 
@@ -43,7 +43,7 @@ for entry in ids:
 result=unittest.TextTestRunner(verbosity=2).run(suite)
 print('"'"'LEAD_RESULT='"'"'+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))
 sys.exit(0 if result.wasSuccessful() else 1)
-' '["tests/ci/test_pr_checks.py::PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp"]'
+' '["tests/ci/test_pr_checks.py::PullRequestChecks.test_publication_scratch_uses_supported_step_runner_context"]'
 # VERIFICATION
 /home/avist/Projects/relational/.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```
