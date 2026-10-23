@@ -1,6 +1,6 @@
 # Human evidence
 
-Source: 410644c99e1fb18cdcd1e14671d2485fa7055737
+Source: 6900f637951123104d01377120e0c7140b3fd0b6
 Reviewer: verifier:rel-01
 
 BEFORE failures: 1
@@ -9,7 +9,7 @@ AFTER failures: 0
 ## RED
 ```text
 LEAD_RESULT={"run": 1, "failed": 1, "errors": 0, "skipped": 0}
-FAIL: test_pull_requests_run_all_five_checks_without_deploying (lead_replay_0.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying)
+FAIL: test_hosted_runner_reclaims_capacity_before_checkout (lead_replay_0.PullRequestChecks.test_hosted_runner_reclaims_capacity_before_checkout)
 FAILED (failures=1)
 ```
 
@@ -43,7 +43,7 @@ for entry in ids:
 result=unittest.TextTestRunner(verbosity=2).run(suite)
 print('"'"'LEAD_RESULT='"'"'+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))
 sys.exit(0 if result.wasSuccessful() else 1)
-' '["tests/ci/test_pr_checks.py::PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying"]'
+' '["tests/ci/test_pr_checks.py::PullRequestChecks.test_hosted_runner_reclaims_capacity_before_checkout"]'
 # VERIFICATION
 /home/avist/Projects/relational/.venv/bin/python -m unittest discover -s tests -p 'test_*.py'
 ```

@@ -1,18 +1,20 @@
-PRs previously had no validation. Add a read-only pull_request workflow running all five REL-01 checks on ubuntu-latest, with explicitly listed check dependencies installed only on disposable GitHub Actions runners. Pages deployment stays in its existing workflow.
+PRs previously had no validation. Add a read-only pull_request workflow running all five REL-01 checks on ubuntu-latest, with explicitly listed dependencies installed only on disposable GitHub Actions runners. Pages deployment bytes are unchanged. The tracked archive is 3.84 GiB; reclaim unused Android/.NET/GHC tools on the disposable runner before checkout so the clean export/publication copies have room. Log available bytes and inodes before and after cleanup.
 
-[Canonical RED/GREEN evidence (verification stdout includes an expected failing fixture)](docs/evidence/rel-01-ci/rel-01/evidence.md) · [RED](docs/evidence/rel-01-ci/rel-01/red.log) · [GREEN](docs/evidence/rel-01-ci/rel-01/green.log) · [verification stdout](docs/evidence/rel-01-ci/rel-01/verification.log).
+[Canonical RED/GREEN evidence (verification stdout includes an expected failing fixture)](docs/evidence/rel-01-ci/rel-01/evidence.md) · [RED](docs/evidence/rel-01-ci/rel-01/red.log) · [GREEN](docs/evidence/rel-01-ci/rel-01/green.log) · [verification stdout](docs/evidence/rel-01-ci/rel-01/verification.log). Full passing stderr/status is retained below.
 
-Reviewed source: `410644c99e1fb18cdcd1e14671d2485fa7055737`. Canonical regression: before 1 assertion failure, after 0; identical tests, zero errors/skips. Full local verification: exit0, clean source, 41 tests passed. The verification stdout's `FAIL hash check` is the intentionally invalid-hash fixture; the unittest result on stderr is `OK`, retained below. GHA has no local RelBench cache, so the existing real-cache test explicitly skips there; no data download or real experiment is run. Existing synthetic unit tests fit small models as part of the required unittest command. These are CI/software checks, not reproduction results.
+Reviewed source `6900f637951123104d01377120e0c7140b3fd0b6`. Separate same native verifier PASS, RISK_FLAG:not-risky; actual report below. Canonical capacity regression: before1failure, after0; identicaltest, zeroerrors/skips. Local suite42testsPASS, clean reviewed source. The existing verification stdout contains intentional negative-fixture `FAIL hash check`; the full stderr below shows the actual passing result. Existing deterministic renderer accepts stdout only; its limitation is disclosed, not hidden. Hosted CI remains required on this final head.
 
-YAML parse: `{'pull_request': True, 'jobs': ['checks'], 'permissions': {'contents': 'read'}}`; required-command grep count: `5`.
+The first real Actions run [39986031745](https://github.com/Avistian/relational/actions/runs/39986031745) failed publication-copy `Disk quota exceeded` on earlier head1c47ca9e; later search/unittest steps were skipped and are never counted as passing. The precise quota boundary was not logged. The workflow repair changes runner capacity only; actual new-head CI must confirm the counterfactual.
 
-Exact local CLI commands used the existing main .venv via PATH (no local installs):
+No local installs or cleanup, new remotes, paid runners, merge, data download or real experiment. Existing synthetic tests fit tiny models; the real-cache test explicitly skips on GHA without downloaded data. Incremental USD0, model cost unmeasured. Draft only; humans merge.
+
+Exact required commands, run locally using the existing main .venv via PATH:
 
 ```text
 $ python3 labs/_test_b05_source_secrets.py
 ....
 ----------------------------------------------------------------------
-Ran 4 tests in 0.405s
+Ran 4 tests in 0.570s
 
 OK
 
@@ -44,74 +46,143 @@ exit_code=0
 $ python -m unittest discover -s tests -p 'test_*.py'
 FAIL hash check:
   x: sha256 mismatch
-.........................................
+..........................................
 ----------------------------------------------------------------------
-Ran 41 tests in 1.225s
+Ran 42 tests in 1.226s
 
 OK
 
 exit_code=0
 ```
 
+Full lead-verify status:
+```json
+{
+  "project": "relational",
+  "root": "/tmp/lead-wt/rel-01",
+  "argv": [
+    "/home/avist/Projects/relational/.venv/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_*.py"
+  ],
+  "timeout": 600,
+  "exit_code": 0,
+  "timed_out": false,
+  "verdict": "PASS",
+  "duration_s": 3,
+  "started_utc": "20261023T162606Z",
+  "source": {
+    "head": "6900f637951123104d01377120e0c7140b3fd0b6",
+    "dirty": false
+  },
+  "config_sha256": "9ab11a32730c2c648094b4f16ab52f3d9e044172ac3c7285f5f63ae709c87d17",
+  "note": "software-verified only; not experiment results"
+}
+```
+
 Full lead-verify stderr:
 ```text
-.........................................
+..........................................
 ----------------------------------------------------------------------
-Ran 41 tests in 1.610s
+Ran 42 tests in 1.241s
 
 OK
 ```
 
-Delivery: draft only, human merge. Incremental USD0; model cost unmeasured. Independent source/local review PASS: verifier:rel-01 (native pane w1:pR), all five checks and 41 tests passed. The deterministic evidence renderer is restricted by the existing validator to verification stdout; use the full stderr above for the passing suite result. Actual Actions URL/head/conclusion are retained in the task delivery report.
-
 <details>
-<summary>Retained independent review artifact (source/local scope; hosted CI pending)</summary>
+<summary>Actual independent repair review (source scope; hosted CI pending)</summary>
 
-# REL-01 independent verifier: PASS (source/local scope)
-
-Reviewer/actor: `verifier:rel-01`; actual exported pane: `w1:pR`.
-Task/slice: `rel-01-ci/rel-01`.
-Source: `410644c99e1fb18cdcd1e14671d2485fa7055737`.
-Role: separate verifier, read-only source. No implementation, TDD implementation, extra reviewer, subagents, installs, spend, push, PR creation or merge. This is a review artifact, not a DONE acceptance report.
-
-## Verdict and scope
+# REL-01 bounded repair review: PASS (source scope)
 
 RISK_FLAG: not-risky
 
-Risk judgment applies to source `410644c99e1fb18cdcd1e14671d2485fa7055737`: the bounded CI-only change passed local checks, uses read-only permissions, and leaves Pages unchanged. Evidence limitation: deterministic rendered `evidence.md` is gate-bound; builder plans committed supplementary raw stderr/status links to explain the expected negative-fixture stdout. That supplementation is pending, not verified by this amendment. Hosted-CI limitation: draft PR and actual remote Actions execution remain pending; this flag does not establish hosted dependency setup or CI success and grants no merge authority.
+Source: `6900f637951123104d01377120e0c7140b3fd0b6`.
+Compared source: `410644c99e1fb18cdcd1e14671d2485fa7055737..6900f637951123104d01377120e0c7140b3fd0b6`.
+Task/slice: `rel-01-ci/rel-01`. Reviewer/actor: `verifier:rel-01`; pane: `w1:pR`.
+Same independent verifier; no additional reviewer or agent. This supersedes the old source review for current source. Historical review is retained in `rel-01-410644c.md`; it does not establish verification of this head. No DONE acceptance report.
 
-PASS: inspected source meets the five-command PR-workflow contract. Independent environment check, real unittest verification (41 tests), and all four other exact CLI checks passed. No source changes requested. Task delivery remains pending draft PR and actual final-head Actions job URL/head/conclusion; remote CI is NOT VERIFIED here. No empty-check success is inferred. Lead owns validation and counted-slot cleanup.
+## Verdict and risk judgment
 
-## Blast radius: safety fact and proof
+PASS for this bounded source repair. No blocking code finding. Two focused workflow tests passed independently; executable YAML comparison proves all existing workflow behavior is identical after removing the new first cleanup step. No broad re-review or Pages export was performed. Builder owns fresh required gates in serial; neither old five-command success nor this two-test run is asserted as new-head full verification.
 
-The safety fact is that this is a separate PR-only validation job with read-only repository permission and no deployment action, while existing Pages deployment bytes stay unchanged. Proof reached skill level 4 (real code run): parsed the actual workflow with installed PyYAML 6.0.3, asserted exact trigger `pull_request`, `contents: read`, one hosted job, no job conditions/environments/permission override, credentials persistence false, only checkout/setup actions and six run steps (one dependency setup plus five exact checks). Compared Pages bytes against base `c200e331`: identical. Ran the commands against the actual checked-out source. See raw proof below.
+`not-risky` describes source safety: deletion is limited to three literal, unused tool directories on the disposable hosted job, before repository checkout, with no workspace variable or broad path. Repository permission, trigger, dependencies and five required commands are unchanged. It does not assert that deleting those tools solves the observed hosted quota or that Actions passed. Capacity, hosted permissions, image layout, runtime and total job duration remain unproven until the new final-head Actions run. No push, install, spend, merge, source edit or local removal occurred.
 
-References: `.github/workflows/pr-checks.yml:3` trigger; `:6` permission; `:10` hosted job and timeout; `:14` checkout; `:23` explicit runner-only dependencies; `:27` through `:40` all five commands. Diff base..source contains only this workflow and tests/ci; no Pages/product changes. `labs/_check_pages_checkout.py:20` exports the index to a disposable directory and executes only the existing Build site block, not deploy steps.
+## Failure inspected
 
-## TDD correctness inspected
+Retained real Actions run `39986031745` failed on old head `1c47ca9e6104db90d09c5063257041667edeb863`, job `checks`, in `_check_pages_checkout.py` while copying publication files: `Disk quota exceeded`. Search-index and unittest steps were skipped after the failure. This is a genuine failed run, not successful CI evidence for either head.
 
-Test-only commit `619d164c` precedes the initial implementation. Canonical RED is the later test-only correction `750d863b29d63117cb05443dcf0fff18da73afeb`, after reverting initial workflow; final workflow commit is `410644c`. Independently compared canonical RED test bytes to final source: identical, and RED has no workflow. Inspected serial replay receipt `drafts/rel-01-preview.tdd.json` plus its full raw logs: RED runs 1 / failures 1 / errors 0 / skips 0 for absent workflow; GREEN runs 1 / failures 0 / errors 0 / skips 0. Independent final unittest run also executes the contract. No new TDD run or code slice was authored by this verifier.
+Run: https://github.com/Avistian/relational/actions/runs/39986031745
+Job: https://github.com/Avistian/relational/actions/runs/39986031745/job/120525336228
+Draft PR: https://github.com/Avistian/relational/pull/23 (retained snapshot; current new-head state not queried).
 
-## Dependencies and least privilege
+## Blast radius and executed proof
 
-Five direct check dependencies are explicitly pinned in workflow line 25; installed versions used locally match those four environment imports plus PyYAML 6.0.3. They cover YAML, numpy/pandas, sklearn baseline imports and parquet IO. Python 3.12 is selected; existing Node/shell/git are assumed on ubuntu-latest. No local installation was attempted. Workflow has no secrets expression, deployment step, environment, token persistence, custom/paid runner, training command or data download command. Existing required unit tests perform tiny synthetic model fits; these are software fixture tests, not a research run. The cache-dependent real-data test is explicitly skipped when its preexisting local cache is absent (`tests/relmini/test_relmini.py:103`), so hosted test totals may include that skip.
+Safety fact: the added shell block can only target the three fixed hosted tool paths and does not change the checks that follow. `.github/workflows/pr-checks.yml:16` introduces the first step; `:18`–`:22` report byte/inode availability before and after the removal; `:20` names `/usr/local/lib/android`, `/usr/share/dotnet`, `/opt/ghc`; checkout follows at `:24`. These toolchains are not used by the Python/Node/shell checks. Read-only contents permission stays at `:6` and hosted runner at `:11`. Pages workflow and checkout-checker bytes are unchanged.
 
-## Explicit risks and limits
+Proof reached blast-radius level 4 for the structural assertions: parsed real old/new YAML with installed PyYAML; removed exactly the new first step and asserted complete semantic equality; asserted exact five-line cleanup block, no interpolated paths, and checkout ordering; checked the block with `bash -n` only; ran actual two-test module on this source. No deletion commands from the workflow were executed, mocked as successful, or measured locally. Actual capacity reclamation remains unproven.
 
-1. Hosted dependency resolution, action execution and 10-minute job duration remain unproven locally (workflow lines 11–25). Likelihood unknown until first Actions run; impact: CI cannot pass. Cheapest remaining check: draft PR's actual `checks` job on final source head. No remote success claimed.
-2. Human-proof readability, confirmed: builder's uncommitted `docs/evidence/rel-01-ci/rel-01/verification.log:1` contains only `FAIL hash check: x: sha256 mismatch`, the expected negative fixture. `evidence.md` repeats that without the passing unittest stderr, whereas `pr-body.md` explains it and includes `Ran 41 tests ... OK`. A reader following the evidence link alone can mistake success for failure (moderate likelihood, proof/review confusion). Lead/builder should retain the actual passing stderr/exit alongside stdout before publishing; do not replace or hide the expected negative output. Manifest hashes currently match raw files. These artifacts remain uncommitted and are not covered by this source SHA; reviewer metadata is a builder-prepared field, not proof this verifier authored them.
-3. Regression-test scope: the test itself does not reject job-level `if` or arbitrary deployment shell commands. Current YAML has neither, independently checked. Low immediate risk on this source; future workflow edits still need review. No speculative test additions requested.
-4. Audit-script false positive retained transparently: the first ad-hoc proof assertion rejected substring `secrets.` in legitimate filename `_test_b05_source_secrets.py`. Corrected only the ephemeral verifier assertion to match actual `${{ secrets... }}` expressions; corrected proof passed. No source edits.
+Repair RED commit `b1fbc63f` modifies only the test file. Independently compared its test bytes to final source: identical; its YAML equals pre-repair YAML and has no pre-checkout step. This establishes the expected failing seam; this verifier did not replay RED or claim builder's replay logs as independently executed. Final actual module run: 2 tests, 0 failures/errors/skips, exit 0.
 
-## Cleared / explicit skips
+## Explicit risks and evidence limits
 
-Pages unchanged; workflow has all exact checks; YAML 1.1 `on` parsing is handled in regression test; test failures propagate (no continue-on-error/conditions); permissions are read-only; no REL-02 check added. No browser/screenshot: issue explicitly non-ui, source changes only CI/tests. No network dependency install probe, hosted CI or publication; no extra reviewer. Earlier builder checkout timeout is historical evidence and is not erased by this independent passing checkout run.
+- Hosted quota outcome: moderate uncertainty, high impact on delivery if it persists. `Disk quota exceeded` does not by itself establish whether bytes, inodes or a quota mechanism is limiting. `df -h`/`df -i` provide observations but impose no capacity threshold. Require the actual new-head job to execute all five checks successfully; no remote PASS is claimed.
+- Hosted image layout may change; missing cleanup paths are tolerated by `rm -rf`, so a future image could reclaim little space. The Python tool cache is outside the three target paths. A failed cleanup exits the step and blocks checks; there is no continue-on-error. Cost is failed CI, confined to the disposable job.
+- Regression test uses substring assertions, so it does not independently prove exact deletion targets/order or actual reclaimed capacity. Current source was checked with exact-line and whole-workflow equality assertions as additional independent proof. No test changes requested.
+- Added docs/evidence are historical proof from the earlier source and do not constitute new-head verification. Supplementary passing stderr/status publication remains a builder/lead evidence responsibility; deterministic rendered evidence is gate-bound. This bounded repair review does not rerender or amend it.
+- Launch environment gate: PASS on current exact head, `dirty:true` solely for retained untracked `.review/` artifacts. No tracked-source diff. Existing read-only Python and cache reused; no preparation/install. Configured full `/verify-project` command was intentionally not rerun by this verifier for this delta; focused module output below is not misrecorded as that skill's full output.
 
-## Actual raw output
+Before completion: lead validates this review, builder completes serial gates, and actual final-head Actions CI must pass. Human merge authority remains required.
+
+## Raw output
+
+### Focused actual test command
+
+`/tmp/lead-wt/v-rel-01/.review/rel-01/6900f63/focused-tests.log`
+
+```text
+$ /home/avist/Projects/relational/.venv/bin/python -B -m unittest tests.ci.test_pr_checks -v
+test_hosted_runner_reclaims_capacity_before_checkout (tests.ci.test_pr_checks.PullRequestChecks.test_hosted_runner_reclaims_capacity_before_checkout) ... ok
+test_pull_requests_run_all_five_checks_without_deploying (tests.ci.test_pr_checks.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.004s
+
+OK
+
+exit_code=0
+
+```
+
+### Executable blast-radius assertions
+
+`/tmp/lead-wt/v-rel-01/.review/rel-01/6900f63/delta-proof.log`
+
+```text
+PASS: new workflow minus exactly its first cleanup step is semantically identical to old workflow (all five checks, actions, dependencies, permissions, trigger and timeout unchanged).
+PASS: cleanup shell syntax checked only; no shell commands from the cleanup block were executed.
+PASS: cleanup argv is literal and exactly three unused hosted tool directories; no variables/globs/workspace/Python paths. df bytes/inodes precede and follow cleanup; cleanup precedes checkout.
+PASS: b1fbc63f is tests-only RED for this repair, tests byte-identical to final source, its workflow equals pre-repair workflow.
+PASS: Pages and checker bytes unchanged.
+{
+  "cleanup_lines": [
+    "df -h /",
+    "df -i /",
+    "sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc",
+    "df -h /",
+    "df -i /"
+  ]
+}
+
+```
 
 ### Environment launch gate
 
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/1792772166302094303/status.json`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/1792772778161601064/status.json`
 
 ```text
 {
@@ -120,10 +191,10 @@ Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/17927721663
   "root": "/tmp/lead-wt/v-rel-01",
   "profile_sha256": "fbaecf787ed6355dc2b9f85a78c84012f1a2533147667b4ab827a033bf7a18c1",
   "source": {
-    "head": "410644c99e1fb18cdcd1e14671d2485fa7055737",
-    "dirty": false
+    "head": "6900f637951123104d01377120e0c7140b3fd0b6",
+    "dirty": true
   },
-  "checked_at": 1792772164,
+  "checked_at": 1792772776,
   "checks": [
     {
       "kind": "lockfile",
@@ -307,155 +378,41 @@ Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/17927721663
     }
   ],
   "verdict": "PASS",
-  "expires_at": 1792772464
+  "expires_at": 1792773076
 }
 
 ```
 
-### Independent blast-radius executable assertions
+### First CI failure metadata (historical)
 
-Path: `/tmp/lead-wt/v-rel-01/.review/rel-01/blast-radius-proof.log`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/remote-ci.json`
 
 ```text
-PASS: exact pull_request trigger; contents read; hosted runner; no job conditions/permission overrides/environments; checkout credentials disabled; only checkout/setup actions and six run steps; Pages bytes unchanged; canonical RED test bytes unchanged; RED lacks workflow; human-proof raw hashes match.
-PyYAML=6.0.3
-{
-  "commands": [
-    "python -m pip install 'PyYAML==6.0.3' 'numpy==2.5.0' 'pandas==3.0.3' 'scikit-learn==1.9.0' 'pyarrow==24.0.0'",
-    "python3 labs/_test_b05_source_secrets.py",
-    "python3 scripts/refresh_lesson_visuals.py --check",
-    "python3 labs/_check_pages_checkout.py",
-    "python3 scripts/search_index.py --check",
-    "python -m unittest discover -s tests -p 'test_*.py'"
-  ],
-  "pages_sha256": "409cdc482079c45dd42573a5010e6197c4d401c3295152fecc8de89f5ee5d4d5"
-}
+{"conclusion":"failure","headSha":"1c47ca9e6104db90d09c5063257041667edeb863","jobs":[{"completedAt":"2026-10-23T16:23:24Z","conclusion":"failure","databaseId":120525336228,"name":"checks","startedAt":"2026-10-23T16:21:10Z","status":"completed","steps":[{"completedAt":"2026-10-23T16:21:11Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-10-23T16:21:10Z","status":"completed"},{"completedAt":"2026-10-23T16:22:29Z","conclusion":"success","name":"Run actions/checkout@v5","number":2,"startedAt":"2026-10-23T16:21:11Z","status":"completed"},{"completedAt":"2026-10-23T16:22:29Z","conclusion":"success","name":"Run actions/setup-python@v6","number":3,"startedAt":"2026-10-23T16:22:29Z","status":"completed"},{"completedAt":"2026-10-23T16:22:50Z","conclusion":"success","name":"Install check dependencies","number":4,"startedAt":"2026-10-23T16:22:29Z","status":"completed"},{"completedAt":"2026-10-23T16:22:50Z","conclusion":"success","name":"Check archived B05 sources for Google API keys","number":5,"startedAt":"2026-10-23T16:22:50Z","status":"completed"},{"completedAt":"2026-10-23T16:23:03Z","conclusion":"success","name":"Verify generated lesson visuals","number":6,"startedAt":"2026-10-23T16:22:50Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"failure","name":"Verify clean-checkout publication inputs","number":7,"startedAt":"2026-10-23T16:23:03Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Verify search index","number":8,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Run unit tests","number":9,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Post Run actions/setup-python@v6","number":17,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"success","name":"Post Run actions/checkout@v5","number":18,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"success","name":"Complete job","number":19,"startedAt":"2026-10-23T16:23:23Z","status":"completed"}],"url":"https://github.com/Avistian/relational/actions/runs/39986031745/job/120525336228"}],"status":"completed","url":"https://github.com/Avistian/relational/actions/runs/39986031745"}
 
 ```
 
-### Four exact CLI checks, reused Python via PATH
+### First CI failure raw excerpt
 
-Path: `/tmp/lead-wt/v-rel-01/.review/rel-01/four-checks.log`
-
-```text
-$ python3 labs/_test_b05_source_secrets.py
-....
-----------------------------------------------------------------------
-Ran 4 tests in 0.372s
-
-OK
-
-exit_code=0
-$ python3 scripts/refresh_lesson_visuals.py --check
-{"lessons": 228, "stories": 61, "changed": 0}
-
-exit_code=0
-$ python3 labs/_check_pages_checkout.py
-PASS: complete Pages build from Git index (no ignored workspace files)
-
-exit_code=0
-$ python3 scripts/search_index.py --check
-search index up to date
-
-exit_code=0
-
-```
-
-### lead-verify status
-
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/verify/relational/20261023T161628Z/status.json`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/ci-first-failure.log` SHA256 `e584672544207086bd275db97dcf75cb3d1596cdd7b34ba3e93d8bee716739c5`
 
 ```text
-{
-  "project": "relational",
-  "root": "/tmp/lead-wt/v-rel-01",
-  "argv": [
-    "/home/avist/Projects/relational/.venv/bin/python",
-    "-m",
-    "unittest",
-    "discover",
-    "-s",
-    "tests",
-    "-p",
-    "test_*.py"
-  ],
-  "timeout": 600,
-  "exit_code": 0,
-  "timed_out": false,
-  "verdict": "PASS",
-  "duration_s": 3,
-  "started_utc": "20261023T161628Z",
-  "source": {
-    "head": "410644c99e1fb18cdcd1e14671d2485fa7055737",
-    "dirty": false
-  },
-  "config_sha256": "9ab11a32730c2c648094b4f16ab52f3d9e044172ac3c7285f5f63ae709c87d17",
-  "note": "software-verified only; not experiment results"
-}
-
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2260552Z Traceback (most recent call last):
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2269215Z   File "/home/runner/work/relational/relational/labs/_check_pages_checkout.py", line 32, in <module>
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2270176Z     check()
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2276654Z   File "/home/runner/work/relational/relational/labs/_check_pages_checkout.py", line 27, in check
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2277810Z     raise AssertionError("Clean Git checkout Pages build failed:\n" + result.stderr)
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2278678Z AssertionError: Clean Git checkout Pages build failed:
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2279735Z cp: error copying 'labs/sources/l187/privacybook.pdf' to 'public/labs/sources/l187/privacybook.pdf': Disk quota exceeded
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2281195Z cp: error copying 'labs/sources/l187/source-ledger.json' to 'public/labs/sources/l187/source-ledger.json': Disk quota exceeded
+checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2282578Z cp: error copying 'labs/sources/l188/2609.02766.html' to 'public/labs/sources/l188/2609.02766.html': Disk quota exceeded
 ```
 
-### lead-verify stdout
-
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/verify/relational/20261023T161628Z/stdout.txt`
+### Source status at review
 
 ```text
-FAIL hash check:
-  x: sha256 mismatch
-
+?? .review/
+6900f637951123104d01377120e0c7140b3fd0b6
 ```
-
-### lead-verify stderr
-
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/evidence/verify/relational/20261023T161628Z/stderr.txt`
-
-```text
-.........................................
-----------------------------------------------------------------------
-Ran 41 tests in 1.152s
-
-OK
-
-```
-
-### Canonical retained RED
-
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/tasks/rel-01-ci/reports/rel-01-preview.tdd/red.log`
-
-```text
-LEAD_RESULT={"run": 1, "failed": 1, "errors": 0, "skipped": 0}
-test_pull_requests_run_all_five_checks_without_deploying (lead_replay_0.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... FAIL
-
-======================================================================
-FAIL: test_pull_requests_run_all_five_checks_without_deploying (lead_replay_0.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/tmp/lead-tdd-1vykld18/tree/tests/ci/test_pr_checks.py", line 14, in test_pull_requests_run_all_five_checks_without_deploying
-    self.assertTrue(path.is_file(), 'PRs need a validation workflow')
-AssertionError: False is not true : PRs need a validation workflow
-
-----------------------------------------------------------------------
-Ran 1 test in 0.000s
-
-FAILED (failures=1)
-
-```
-
-### Canonical retained GREEN
-
-Path: `/tmp/lead-wt/process-lessons-v1/.lead/tasks/rel-01-ci/reports/rel-01-preview.tdd/green.log`
-
-```text
-LEAD_RESULT={"run": 1, "failed": 0, "errors": 0, "skipped": 0}
-test_pull_requests_run_all_five_checks_without_deploying (lead_replay_0.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.002s
-
-OK
-
-```
-
-Verification CLI: `/tmp/lead-wt/process-lessons-v1/bin/lead-verify relational --worktree /tmp/lead-wt/v-rel-01` returned exit 0, PASS, source.head `410644c99e1fb18cdcd1e14671d2485fa7055737`, dirty false at verification launch. Environment launch gate also PASS, same head and clean tree. Later worktree dirtiness is only verifier review artifacts under `.review/`; no tracked-source edits.
 
 </details>
