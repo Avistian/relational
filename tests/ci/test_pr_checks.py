@@ -42,8 +42,13 @@ class PullRequestChecks(unittest.TestCase):
         self.assertNotIn('check_course_visuals.py', path.read_text())
         self.assertNotRegex(path.read_text(), r'\$\{\{\s*secrets[.\[]')
 
-    def test_large_publication_exports_use_disk_backed_runner_temp(self):
+    def test_publication_scratch_uses_supported_step_runner_context(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/pr-checks.yml').read_text())
         for job in workflow['jobs'].values():
-            self.assertEqual(job.get('env', {}).get('TMPDIR'), '${{ runner.temp }}',
-                             'Publication export/build copies exceed Ubuntu 26.04 /tmp user quota')
+            self.assertNotIn('TMPDIR', job.get('env', {}),
+                             'GitHub job.env cannot reference the runner context')
+            publication = [step for step in job['steps']
+                           if step.get('run') == 'python3 labs/_check_pages_checkout.py']
+            self.assertEqual(len(publication), 1)
+            self.assertEqual(publication[0].get('env', {}).get('TMPDIR'), '${{ runner.temp }}',
+                             'Publication scratch must use supported step.env runner context')
