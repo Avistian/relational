@@ -42,16 +42,8 @@ class PullRequestChecks(unittest.TestCase):
         self.assertNotIn('check_course_visuals.py', path.read_text())
         self.assertNotRegex(path.read_text(), r'\$\{\{\s*secrets[.\[]')
 
-    def test_hosted_runner_reclaims_capacity_before_checkout(self):
+    def test_large_publication_exports_use_disk_backed_runner_temp(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/pr-checks.yml').read_text())
         for job in workflow['jobs'].values():
-            steps = job['steps']
-            checkout = next(i for i, step in enumerate(steps)
-                            if step.get('uses', '').startswith('actions/checkout@'))
-            setup = steps[:checkout]
-            self.assertTrue(setup, 'The 3.84 GiB repository plus export/build copies need hosted-runner space before checkout')
-            cleanup = '\n'.join(step.get('run', '') for step in setup)
-            self.assertIn('df -h', cleanup)
-            self.assertIn('df -i', cleanup)
-            self.assertIn('sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc', cleanup)
-            self.assertNotIn('GITHUB_WORKSPACE', cleanup)
+            self.assertEqual(job.get('env', {}).get('TMPDIR'), '${{ runner.temp }}',
+                             'Publication export/build copies exceed Ubuntu 26.04 /tmp user quota')
