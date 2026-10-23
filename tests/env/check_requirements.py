@@ -2,9 +2,7 @@
 
 import argparse
 from pathlib import Path
-
-from packaging.requirements import Requirement
-from packaging.utils import canonicalize_name
+import re
 
 
 # Existing direct requirements absent from the historical lock; refresh lock: Piotr.
@@ -31,16 +29,23 @@ BASELINE_GAPS = frozenset({
 
 
 def package_names(path):
-    """Read PEP 508 names, ignoring constraints, extras and marker evaluation."""
+    """Read leading package names; suffix constraints/markers are not validated.
+
+    These files use named requirements, not pip options or recursive includes.
+    Reject unsupported lines so a new include cannot silently evade coverage.
+    """
     names = set()
     for number, line in enumerate(Path(path).read_text().splitlines(), 1):
         requirement = line.split("#", 1)[0].strip()
         if not requirement:
             continue
-        try:
-            names.add(canonicalize_name(Requirement(requirement).name))
-        except ValueError as error:
-            raise ValueError(f"{path}:{number}: {error}") from error
+        match = re.match(
+            r"([A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?)(?=$|[\s\[<>=!~;@])",
+            requirement,
+        )
+        if match is None:
+            raise ValueError(f"{path}:{number}: expected a named requirement")
+        names.add(re.sub(r"[-_.]+", "-", match[1]).lower())
     return names
 
 
