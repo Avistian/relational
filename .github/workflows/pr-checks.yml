@@ -10,10 +10,6 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Ubuntu 26.04 /tmp has a per-user tmpfs quota; export + build exceeds it.
-    # runner.temp lives on disk. Keep the publication check itself unchanged.
-    env:
-      TMPDIR: ${{ runner.temp }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -35,6 +31,10 @@ jobs:
         run: python3 scripts/refresh_lesson_visuals.py --check
 
       - name: Verify clean-checkout publication inputs
+        # Large export/build copies exceed Ubuntu 26.04's /tmp user quota.
+        # runner context is supported here in step.env, not in job.env.
+        env:
+          TMPDIR: ${{ runner.temp }}
         run: python3 labs/_check_pages_checkout.py
 
       - name: Verify search index
