@@ -205,3 +205,61 @@ Receipt: `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/recovery-w1-rel-09
 ### Scope and limits
 
 Tests and checker are confined to tests/flashcards; original deck, progress report and shared workflow are unchanged. Independent probes rejected 28 disposable cases and confirmed inputs unchanged. Required fields check presence/nonblank strings; broader field types and teaching-content semantics are outside this contract. Node is exercised locally; hosted runner availability requires actual final-head CI. These are local software checks, with no experiment, provider, browser, screenshots or production claims. No local installation, new spend, source changes, publication or merge was performed for this proof continuation. Final verifier review, its explicit RISK_FLAG and main acceptance/publication remain required.
+
+### Bounded admission correction (PROOF_READY2)
+
+The REL-05 rejected acceptance was diagnosed read-only using its preserved receipt/logs. Its actual mismatches were elapsed-time `Ran 8 tests in 0.014s` and `Ran 8 tests in 0.074s` lines. REL-09 selected the same unstable elapsed-time pattern plus temporary traceback paths. Only this slice's selected RED/GREEN proof is corrected: exact numerical LEAD_RESULT and FAILED/OK summaries survive fresh replay; canonical argv and tests remain unchanged. Complete original logs, original proof and candidate are retained under task recovery-w1-rel-09/correction2/original and the original canonical logs remain in tdd-replay/. Original timeout, blocked audit and the REL-05 failed receipt remain preserved. No replay or acceptance was executed by this builder correction.
+
+The builder performed a fresh real /verify-project run against the clean reviewed code SHA in the original reserved worktree, then restored the evidence branch. The latest verify attestation belongs to actual builder:w1-rel-09 / w1:pZ and binds that builder-run stderr. The independent reviewer should record only the review step at final evidence recheck. Fresh complete builder verification follows; the earlier snapshot above remains historical.
+
+#### Refreshed builder verification: status.json
+
+```text
+{
+  "project": "relational",
+  "root": "/tmp/lead-wt/w1-rel-09",
+  "argv": [
+    "/home/avist/Projects/relational/.venv/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_*.py"
+  ],
+  "timeout": 600,
+  "exit_code": 0,
+  "timed_out": false,
+  "verdict": "PASS",
+  "duration_s": 2,
+  "started_utc": "20261023T190139Z",
+  "source": {
+    "head": "8803fdd68f99960148bf0a5f124f4948a6b4df9a",
+    "dirty": false
+  },
+  "config_sha256": "9ab11a32730c2c648094b4f16ab52f3d9e044172ac3c7285f5f63ae709c87d17",
+  "note": "software-verified only; not experiment results"
+}
+```
+
+#### Refreshed builder verification: stdout.txt
+
+```text
+FAIL hash check:
+  x: sha256 mismatch
+```
+
+#### Refreshed builder verification: stderr.txt
+
+```text
+..............................................
+----------------------------------------------------------------------
+Ran 46 tests in 1.377s
+
+OK
+```
+
+Raw verification directory: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190139Z`. The manifest verification stdout selection remains unchanged because both raw stdout files contain the same exact stable lines. The passing verdict and 46-test summary remain fully embedded above.
+
+Final evidence-diff review for the new delivery is PENDING. The previous explicit verifier risk binding applies to the prior delivery; no new risk flag or merge eligibility is inferred. Main owns prompt acceptance with fresh environment and final reviewer binding, plus managed draft publication and actual hosted CI.
