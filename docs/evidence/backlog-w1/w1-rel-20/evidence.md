@@ -9,52 +9,12 @@ AFTER failures: 0
 ## RED
 ```text
 LEAD_RESULT={"run": 4, "failed": 4, "errors": 0, "skipped": 0}
-test_repository_baseline_is_explicit (lead_replay_0.RequirementCoverageTests.test_repository_baseline_is_explicit) ... FAIL
-test_normalized_names_extras_comments_and_versions (lead_replay_1.RequirementCoverageTests.test_normalized_names_extras_comments_and_versions) ... FAIL
-test_disposable_new_unlocked_dependency_fails (lead_replay_2.RequirementCoverageTests.test_disposable_new_unlocked_dependency_fails) ... FAIL
-test_existing_covered_dependency_cannot_become_a_silent_gap (lead_replay_3.RequirementCoverageTests.test_existing_covered_dependency_cannot_become_a_silent_gap) ... FAIL
-======================================================================
-FAIL: test_repository_baseline_is_explicit (lead_replay_0.RequirementCoverageTests.test_repository_baseline_is_explicit)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/tmp/lead-tdd-67iacs3m/tree/tests/env/test_requirements.py", line 23, in test_repository_baseline_is_explicit
-    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-AssertionError: 2 != 0 : /home/avist/Projects/relational/.venv/bin/python: can't open file '/tmp/lead-tdd-67iacs3m/tree/tests/env/check_requirements.py': [Errno 2] No such file or directory
-======================================================================
-FAIL: test_normalized_names_extras_comments_and_versions (lead_replay_1.RequirementCoverageTests.test_normalized_names_extras_comments_and_versions)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/tmp/lead-tdd-67iacs3m/tree/tests/env/test_requirements.py", line 39, in test_normalized_names_extras_comments_and_versions
-    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-AssertionError: 2 != 0 : /home/avist/Projects/relational/.venv/bin/python: can't open file '/tmp/lead-tdd-67iacs3m/tree/tests/env/check_requirements.py': [Errno 2] No such file or directory
-======================================================================
-FAIL: test_disposable_new_unlocked_dependency_fails (lead_replay_2.RequirementCoverageTests.test_disposable_new_unlocked_dependency_fails)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/tmp/lead-tdd-67iacs3m/tree/tests/env/test_requirements.py", line 49, in test_disposable_new_unlocked_dependency_fails
-    self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-AssertionError: 2 != 1 : /home/avist/Projects/relational/.venv/bin/python: can't open file '/tmp/lead-tdd-67iacs3m/tree/tests/env/check_requirements.py': [Errno 2] No such file or directory
-======================================================================
-FAIL: test_existing_covered_dependency_cannot_become_a_silent_gap (lead_replay_3.RequirementCoverageTests.test_existing_covered_dependency_cannot_become_a_silent_gap)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  File "/tmp/lead-tdd-67iacs3m/tree/tests/env/test_requirements.py", line 61, in test_existing_covered_dependency_cannot_become_a_silent_gap
-    self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
-AssertionError: 2 != 1 : /home/avist/Projects/relational/.venv/bin/python: can't open file '/tmp/lead-tdd-67iacs3m/tree/tests/env/check_requirements.py': [Errno 2] No such file or directory
-----------------------------------------------------------------------
-Ran 4 tests in 0.044s
 FAILED (failures=4)
 ```
 
 ## GREEN
 ```text
 LEAD_RESULT={"run": 4, "failed": 0, "errors": 0, "skipped": 0}
-test_repository_baseline_is_explicit (lead_replay_0.RequirementCoverageTests.test_repository_baseline_is_explicit) ... ok
-test_normalized_names_extras_comments_and_versions (lead_replay_1.RequirementCoverageTests.test_normalized_names_extras_comments_and_versions) ... ok
-test_disposable_new_unlocked_dependency_fails (lead_replay_2.RequirementCoverageTests.test_disposable_new_unlocked_dependency_fails) ... ok
-test_existing_covered_dependency_cannot_become_a_silent_gap (lead_replay_3.RequirementCoverageTests.test_existing_covered_dependency_cannot_become_a_silent_gap) ... ok
-----------------------------------------------------------------------
-Ran 4 tests in 0.100s
 OK
 ```
 

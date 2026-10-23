@@ -278,3 +278,80 @@ Classification: actual 30-second subprocess timeout during RED checkout; no asse
 </details>
 
 Historical blocked audit remains intact at `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/builder-evidence/w1-rel-20/original-blocked-source-ready.md`, SHA256 `431a701588f8d6f437e0425da0b0c013343917ea46ff91e427023a2801491a6b`. This is historical pre-repair evidence, not the current outcome. The successful retry receipt and original raw logs remain at `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/builder-evidence/w1-rel-20/canonical-tdd.json`; acceptance must bind the final report through its supported replay gate.
+
+## Bounded admission correction
+
+Canonical raw selections now contain only the exact numerical `LEAD_RESULT` and `OK`/`FAILED` summaries. The original committed proof included elapsed-time and temporary-checkout traceback lines, which change across fresh canonical replay and caused the analogous REL05 acceptance refusal. REL20 acceptance has not been attempted here. Full original canonical logs, original proof/receipt/report and diagnostics remain unchanged outside the selected raw files, and original proof commit `9cf0eca6feb04e0c09490b4fb0f757056e68fee3` remains in ancestry.
+
+Fresh builder /verify-project at clean reviewed source `31e07db926d3b08855aa2b651bb51cd75c75719e`: PASS, exit 0, no timeout, 46 tests OK. Ordinary detached checkout of this source in the original worker tree was used for fresh verification/environment, then the original branch was restored. No source edits, force operations, forged evidence or gate edits. Actual latest verify attestation belongs to `builder:w1-rel-20`, pane `w1:p0`; the reviewer records review only for the final evidence delta. Final review of this new evidence commit is pending; no new risk classification, acceptance, final-head CI or merge authority is claimed. The older full status/stderr above remain exact historical passing evidence; current source verification follows in full.
+
+<details>
+<summary>Fresh builder verification status</summary>
+
+Path: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190135Z/status.json`
+
+SHA256: `f0a6ecc92bf329c53238735396a8296a689ce9e6803f02293309d301b3bbd100`
+
+```json
+{
+  "project": "relational",
+  "root": "/tmp/lead-wt/w1-rel-20",
+  "argv": [
+    "/home/avist/Projects/relational/.venv/bin/python",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests",
+    "-p",
+    "test_*.py"
+  ],
+  "timeout": 600,
+  "exit_code": 0,
+  "timed_out": false,
+  "verdict": "PASS",
+  "duration_s": 3,
+  "started_utc": "20261023T190135Z",
+  "source": {
+    "head": "31e07db926d3b08855aa2b651bb51cd75c75719e",
+    "dirty": false
+  },
+  "config_sha256": "9ab11a32730c2c648094b4f16ab52f3d9e044172ac3c7285f5f63ae709c87d17",
+  "note": "software-verified only; not experiment results"
+}
+```
+
+</details>
+
+<details>
+<summary>Fresh builder full passing stderr</summary>
+
+Path: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190135Z/stderr.txt`
+
+SHA256: `a501bc9d9e437a9c1960f8b14e8df952f3413289552e92b3253348cf70b574a3`
+
+```text
+..............................................
+----------------------------------------------------------------------
+Ran 46 tests in 1.335s
+
+OK
+```
+
+</details>
+
+<details>
+<summary>Fresh builder full stdout (expected negative fixture)</summary>
+
+Path: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190135Z/stdout.txt`
+
+SHA256: `ac82d3fc9976f1d7b1f404b4f05cae44fb9f53a3cf9ed3d94bfb3b57cb749334`
+
+```text
+FAIL hash check:
+  x: sha256 mismatch
+```
+
+</details>
+
+Original proof archive: `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/builder-evidence/w1-rel-20/admission-correction1/before`; concrete volatile-line diagnosis: `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/builder-evidence/w1-rel-20/admission-correction1/diagnosis.json`. Original final reviewer binding for delivery `9cf0eca6...` remains separately retained and applies to that delivery; the current evidence-only correction needs its own reviewer binding.
