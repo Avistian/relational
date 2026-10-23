@@ -10,7 +10,7 @@ The deterministic renderer shows verification stdout only. Its `FAIL hash check:
 <summary>Passing configured verification: raw stdout, stderr and status</summary>
 
 Command: `/home/avist/agent-stack/lead/bin/lead-verify relational --worktree /tmp/lead-wt/w1-rel-05`
-Evidence directory: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T183541Z`
+Evidence directory: `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190140Z`
 
 stdout:
 ```text
@@ -25,7 +25,7 @@ stderr:
 ```text
 ..................................................
 ----------------------------------------------------------------------
-Ran 50 tests in 1.606s
+Ran 50 tests in 1.621s
 
 OK
 ```
@@ -49,8 +49,8 @@ status.json:
   "exit_code": 0,
   "timed_out": false,
   "verdict": "PASS",
-  "duration_s": 4,
-  "started_utc": "20261023T183541Z",
+  "duration_s": 3,
+  "started_utc": "20261023T190140Z",
   "source": {
     "head": "030df3dc3452b590d52cce14a04476fbef4ca8cc",
     "dirty": false
@@ -125,3 +125,5 @@ The source reviewer returned PASS / not-risky, independently ran all 50 tests an
 The original attempt could not write Git metadata and encountered an earlier checker gate conflict. Those historical blockers were repaired by lead before this recovery. Original `source-ready.md`, `blocked.json`, and `red.log` remain byte-for-byte at `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/blocked-snapshots/w1-rel-05/recovery-preserved-original/`; original raw recovery RED stdout/stderr and missing-discovery-marker note remain under `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1/blocked-snapshots/`. Initial recovery RED `fc7d6ca4` omitted the package marker; before helper implementation its tests-only commit was corrected to `9179723d`, retaining identical canonical test bytes and original failure logs. No declaration was replaced, no assets were altered, and no extra baseline exception was added. Historical NOT_RUN statements describe that stopped attempt, not the completed current local verification.
 
 </details>
+
+Evidence admission correction: the rejected proof selected elapsed-time summaries that changed on canonical replay (RED 0.014s to 0.016s; GREEN 0.074s to 0.064s). Those lines were removed from the selected canonical raw files. Numerical LEAD_RESULT outcomes, FAILED/OK summaries, deterministic CLI lines and exact argv remain verbatim and match both original and acceptance replay logs. Full logs, original committed proof, failed receipt/logs and rejected report are preserved outside the repository in the admission-correction2 folder named in manifest.json; no historical evidence was overwritten. Full passing verification stdout/stderr/status above comes from a new actual builder run at the clean reviewed source, 50 tests PASS. Its raw stderr was recorded by builder:w1-rel-05 as the latest verify invocation; the reviewer must record only the review step. Source code and canonical test blobs are unchanged. Corrected proof still awaits separate verifier binding and main admission/publication; this is not a claim of successful admission or hosted CI.

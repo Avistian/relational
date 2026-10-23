@@ -10,7 +10,6 @@ AFTER failures: 0
 ```text
 LEAD_RESULT={"run": 8, "failed": 10, "errors": 0, "skipped": 0}
 AssertionError: Manifest integrity checker is not implemented
-Ran 8 tests in 0.014s
 FAILED (failures=10)
 ```
 
@@ -20,7 +19,6 @@ Deleted-entry mutation rejected:
 unlisted lesson: 0001-single-table-assumption.html
 authored gap: 1
 LEAD_RESULT={"run": 8, "failed": 0, "errors": 0, "skipped": 0}
-Ran 8 tests in 0.074s
 OK
 ```
 
