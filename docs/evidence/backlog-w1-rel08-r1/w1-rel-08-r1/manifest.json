@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "kind": "non-ui",
+  "source_sha": "ae115b5720c5257867014a38aacf7b982e314502",
+  "reviewer": "verifier:w1-rel-08-r1",
+  "raw": [
+    {
+      "phase": "red",
+      "path": "red.log",
+      "sha256": "34580f92f3db5bbb5eb4efe7ffb502d60d399a97c87614feee2adba5e2b228bd",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-B",
+        "-c",
+        "\nimport importlib.util,json,pathlib,sys,unittest\nroot=pathlib.Path.cwd(); suite=unittest.TestSuite(); ids=json.loads(sys.argv[1])\nfor entry in ids:\n    file, identity=entry.split('::',1)\n    spec=importlib.util.spec_from_file_location('lead_replay_'+str(len(suite._tests)),root/file)\n    module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n    target=module\n    for name in identity.split('.'): target=getattr(target,name)\n    cls=getattr(module,identity.split('.')[0]); suite.addTest(cls(identity.split('.')[-1]))\nresult=unittest.TextTestRunner(verbosity=2).run(suite)\nprint('LEAD_RESULT='+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+        "[\"tests/notebooks/test_duplicate_ids.py::CellIdentityChecks.test_duplicate_cell_ids_block\", \"tests/notebooks/test_duplicate_ids.py::CellIdentityChecks.test_missing_cell_ids_remain_nonblocking_warnings\"]"
+      ],
+      "key_lines": [
+        "LEAD_RESULT={\"run\": 2, \"failed\": 1, \"errors\": 0, \"skipped\": 0}",
+        "FAILED (failures=1)"
+      ]
+    },
+    {
+      "phase": "green",
+      "path": "green.log",
+      "sha256": "13c8c364bfa12a325cff1b1027949b9fabddac8d9e778b06a9c5c6621c9ff6a4",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-B",
+        "-c",
+        "\nimport importlib.util,json,pathlib,sys,unittest\nroot=pathlib.Path.cwd(); suite=unittest.TestSuite(); ids=json.loads(sys.argv[1])\nfor entry in ids:\n    file, identity=entry.split('::',1)\n    spec=importlib.util.spec_from_file_location('lead_replay_'+str(len(suite._tests)),root/file)\n    module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n    target=module\n    for name in identity.split('.'): target=getattr(target,name)\n    cls=getattr(module,identity.split('.')[0]); suite.addTest(cls(identity.split('.')[-1]))\nresult=unittest.TextTestRunner(verbosity=2).run(suite)\nprint('LEAD_RESULT='+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+        "[\"tests/notebooks/test_duplicate_ids.py::CellIdentityChecks.test_duplicate_cell_ids_block\", \"tests/notebooks/test_duplicate_ids.py::CellIdentityChecks.test_missing_cell_ids_remain_nonblocking_warnings\"]"
+      ],
+      "key_lines": [
+        "LEAD_RESULT={\"run\": 2, \"failed\": 0, \"errors\": 0, \"skipped\": 0}",
+        "OK"
+      ]
+    },
+    {
+      "phase": "verification",
+      "path": "verification.log",
+      "sha256": "50858877cf1d949eb91134cad5150172cb5fb981a190166d6c73e8cbb10cac48",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py"
+      ],
+      "key_lines": [
+        "    \"notebooks\": 410,",
+        "    \"students\": 221",
+        "    \"solutions\": 148,",
+        "  \"errors\": [],"
+      ]
+    }
+  ]
+}
