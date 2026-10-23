@@ -1,0 +1,29 @@
+REL-08 adds a read-only notebook schema and exact student/HTML/solution pairing check. It validates all 410 notebooks and blocks malformed data or unexplained pairing drift. The original feature adds seven tests and only `nbformat==5.10.4` to the existing CI dependency installation command; all five existing workflow checks and their setup remain intact.
+
+R1 closes the independently reproduced duplicate-cell-ID escape: nbformat repaired duplicate IDs in memory and the audit returned zero errors. The checker now promotes DuplicateCellId warnings to blocking errors while retaining the warnings. Piotr explicitly chose “Reject duplicates; retain missing-ID warnings (Recommended)”. Missing IDs remain nonblocking. No notebook bytes, teaching content, workflow or exception list changed in R1.
+
+Reviewed source: `ae115b5720c5257867014a38aacf7b982e314502`.
+Full-feature review base: `00f3dfd721dc66bbab3f9672705fd0f60fe8a416`.
+Task/slice: `backlog-w1-rel08-r1/w1-rel-08-r1`; reservation `da011d8df01a`.
+Builder: `builder:w1-rel-08-r1`, actual pane `w1:p15`.
+Independent reviewer: `verifier:w1-rel-08-r1`, actual pane `w1:p16`.
+
+Human proof: [exact commands, stable raw outcomes and BEFORE/AFTER counts](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/evidence.md), [manifest](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/manifest.json), [RED](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/red.log), [GREEN](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/green.log), [verification inventory key lines](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/verification.log).
+
+Actual R1 canonical result: RED ran 2 tests with 1 failure, 0 errors and 0 skips; GREEN ran the identical 2 tests with 0 failures, errors or skips. The missing-ID policy test already passed RED. The duplicate test failed the meaningful assertion `0 != 1 : Duplicate IDs must block the real audit`. Original seven tests and new canonical test file stay byte-identical. The original feature's separate historical canonical cycle was 7 tests/7 failures to 7 tests/0 failures; it is not substituted for R1's actual 2-test cycle.
+
+Full canonical logs, including timings and temporary traceback paths, remain unchanged outside the selected key lines:
+`/home/avist/agent-stack/lead/.lead/tasks/backlog-w1-rel08-r1/w1-rel-08-r1-final-source-tdd/{red,green}.log`.
+The matching source-specific receipt is `w1-rel-08-r1-final-source-tdd.json` in the same task directory and binds the reviewed source above. All earlier receipts and raw attempts remain retained.
+
+Configured project verification on this exact clean source: PASS, exit 0, timed_out false; 51 tests, OK. Durable `status.json`, `stdout.txt` and `stderr.txt`:
+`/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T185737Z`.
+Actual passing stderr ends in `OK`. Verification selections are verbatim inventory lines from stdout because that is the human-evidence gate's raw source. Full stdout additionally contains `FAIL hash check:` / `  x: sha256 mismatch` from an unrelated passing negative test; stdout alone does not establish unittest status. Independent verifier reran the project suite: 51 tests, OK, PASS exit 0, clean source, with all three files at `/home/avist/agent-stack/lead/.lead/evidence/verify/relational/20261023T190139Z-1`.
+
+Independent source review verdict: **PASS — reviewed source and committed builder proof.** The actual artifact is `/home/avist/agent-stack/lead/.lead/tasks/backlog-w1-rel08-r1/reviews/w1-rel-08-r1.md`. It covers the full original REL-08 diff plus R1 against the base above, original intent evidence, workflow/dependency setup, exact exceptions, immutable canonical RED/GREEN, and real audit/CLI mutations. The verifier independently confirmed 9 focused tests, 51 project tests, all 410 notebook hashes, zero inventory errors and 464 warnings, all MissingIDFieldWarning. Duplicate CLI input exits 1; missing-ID input exits 0; deleting shipped solution 0081 still blocks. Disposable probes preserve notebook bytes. This is software validation; no notebook execution, browser validation or scientific result is claimed.
+
+The exact finite exceptions preserve existing intent: 72 named local teacher copies follow the README/gitignore policy; LAB-TEMPLATE is the authoring template; foundation-sequence.html is the linked materials directory; 0113-scaling-ogb-solution.html is the explicitly generated solution export. Existing shipped solutions remain checked; new unexplained gaps block.
+
+Historical evidence remains accessible: [original blocking review](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/original-w1-rel-08.md), [original defect probe](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/original-w1-rel-08-probe.py), [original raw defect result](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/original-w1-rel-08-probe.txt), [approved warning policy](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/grill.md), [full baseline inventory](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/inventory-before.json), [unchanged inventory](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/inventory-after.json), [hash preservation](docs/evidence/backlog-w1-rel08-r1/w1-rel-08-r1/preservation.json). Parent REL-08 remains historical BLOCKED/superseded; this task owns R1 delivery. The old probe deliberately confirms the original defect and is not represented as a current passing regression.
+
+This commit packages only the six fixed human-proof files after the source review. Reviewed source and tests are immutable; delivery HEAD is recorded separately in the shared candidate/handoff. Main still owns final proof/code-equivalence binding, just-in-time environment readiness, admission, managed draft publication and actual final-head hosted CI. Source review PASS does not claim those later gates have passed. No publish, accept or merge was performed by this builder.
