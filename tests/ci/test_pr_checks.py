@@ -40,4 +40,4 @@ class PullRequestChecks(unittest.TestCase):
                 self.assertNotIn('deploy', step.get('uses', '').lower())
         self.assertTrue(required <= commands, f'Missing checks: {required - commands}')
         self.assertNotIn('check_course_visuals.py', path.read_text())
-        self.assertNotIn('secrets.', path.read_text())
+        self.assertNotRegex(path.read_text(), r'\$\{\{\s*secrets[.\[]')
