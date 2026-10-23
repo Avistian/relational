@@ -1,14 +1,14 @@
-PRs previously had no validation. Add a read-only pull_request workflow running all five REL-01 checks on ubuntu-latest, with explicitly listed dependencies installed only on disposable GitHub Actions runners. Pages deployment bytes are unchanged. The tracked archive is 3.84 GiB; reclaim unused Android/.NET/GHC tools on the disposable runner before checkout so the clean export/publication copies have room. Log available bytes and inodes before and after cleanup.
+PRs previously had no validation. Add a read-only pull_request workflow running all five REL-01 checks on ubuntu-latest, with explicitly pinned check dependencies installed only on disposable GitHub Actions runners. Existing Pages deployment bytes stay unchanged. Job TMPDIR uses disk-backed runner.temp so the unchanged publication checker can export/build its large archive outside /tmp quota.
 
 [Canonical RED/GREEN evidence (verification stdout includes an expected failing fixture)](docs/evidence/rel-01-ci/rel-01/evidence.md) · [RED](docs/evidence/rel-01-ci/rel-01/red.log) · [GREEN](docs/evidence/rel-01-ci/rel-01/green.log) · [verification stdout](docs/evidence/rel-01-ci/rel-01/verification.log). Full passing stderr/status is retained below.
 
-Reviewed source `6900f637951123104d01377120e0c7140b3fd0b6`. Separate same native verifier PASS, RISK_FLAG:not-risky; actual report below. Canonical capacity regression: before1failure, after0; identicaltest, zeroerrors/skips. Local suite42testsPASS, clean reviewed source. The existing verification stdout contains intentional negative-fixture `FAIL hash check`; the full stderr below shows the actual passing result. Existing deterministic renderer accepts stdout only; its limitation is disclosed, not hidden. Hosted CI remains required on this final head.
+Reviewed source `c4f0719eba859ce6d0fbb254e2cb91001614903e`. Same independent native verifier PASS, RISK_FLAG:not-risky; actual review below. Canonical TMPDIR regression before1failure, after0; identicaltest, zeroerrors/skips. Actual final-source local unittest suite42testsPASS and clean source; status/stderr retained below. Expected negative-hash fixture prints FAIL on stdout while the passing suite reports OK on stderr. The existing deterministic renderer accepts stdout only; its readability limitation is disclosed. Hosted CI is required on the delivery head.
 
-The first real Actions run [39986031745](https://github.com/Avistian/relational/actions/runs/39986031745) failed publication-copy `Disk quota exceeded` on earlier head1c47ca9e; later search/unittest steps were skipped and are never counted as passing. The precise quota boundary was not logged. The workflow repair changes runner capacity only; actual new-head CI must confirm the counterfactual.
+Actual failed counterfactuals: [first run39986031745](https://github.com/Avistian/relational/actions/runs/39986031745) and [root-space cleanup run39987374176](https://github.com/Avistian/relational/actions/runs/39987374176) failed publication-copy with Disk quota exceeded. The second run used Ubuntu26.04.1, logged rootfree88G before cleanup and105G after, with18M free inodes, yet failed at the same file. Root cleanup was therefore removed, not represented as a successful fix. [Primary runner-image issue14777](https://github.com/actions/runner-images/issues/14777) has maintainers' reproduction of Ubuntu26.04 /tmp tmpfs per-user quota and their TMPDIR=runner.temp option. The job TMPDIR setting is a bounded inference from matching actual image/symptom and upstream reproduction; actual new-head CI must confirm it. Failed runs' later search/unittest steps were skipped, never counted as passing.
 
-No local installs or cleanup, new remotes, paid runners, merge, data download or real experiment. Existing synthetic tests fit tiny models; the real-cache test explicitly skips on GHA without downloaded data. Incremental USD0, model cost unmeasured. Draft only; humans merge.
+No local installs/cleanup, new remote/provider/paid runner, merge, data download or real experiment. Existing synthetic tests fit tiny models; the real-cache test explicitly skips on GHA without downloaded data. Incremental USD0, model cost unmeasured. Draft only, humans merge.
 
-Exact required commands, run locally using the existing main .venv via PATH:
+Historical local exact-five-command proof below is explicitly source6900f637, before the final workflow-only TMPDIR change. Final source received fresh42-test verification and canonical replay; hosted CI must execute all five checks on its delivery head.
 
 ```text
 $ python3 labs/_test_b05_source_secrets.py
@@ -55,7 +55,7 @@ OK
 exit_code=0
 ```
 
-Full lead-verify status:
+Actual final-source lead-verify status:
 ```json
 {
   "project": "relational",
@@ -75,9 +75,9 @@ Full lead-verify status:
   "timed_out": false,
   "verdict": "PASS",
   "duration_s": 3,
-  "started_utc": "20261023T162606Z",
+  "started_utc": "20261023T163727Z",
   "source": {
-    "head": "6900f637951123104d01377120e0c7140b3fd0b6",
+    "head": "c4f0719eba859ce6d0fbb254e2cb91001614903e",
     "dirty": false
   },
   "config_sha256": "9ab11a32730c2c648094b4f16ab52f3d9e044172ac3c7285f5f63ae709c87d17",
@@ -85,68 +85,72 @@ Full lead-verify status:
 }
 ```
 
-Full lead-verify stderr:
+Actual final-source lead-verify stderr:
 ```text
 ..........................................
 ----------------------------------------------------------------------
-Ran 42 tests in 1.241s
+Ran 42 tests in 1.290s
 
 OK
 ```
 
 <details>
-<summary>Actual independent repair review (source scope; hosted CI pending)</summary>
+<summary>Actual independent final repair review (source scope; hosted CI pending)</summary>
 
-# REL-01 bounded repair review: PASS (source scope)
+# REL-01 final bounded repair review: PASS (source scope)
 
 RISK_FLAG: not-risky
 
-Source: `6900f637951123104d01377120e0c7140b3fd0b6`.
-Compared source: `410644c99e1fb18cdcd1e14671d2485fa7055737..6900f637951123104d01377120e0c7140b3fd0b6`.
+Source: `c4f0719eba859ce6d0fbb254e2cb91001614903e`.
+Reviewed delta: `6900f637951123104d01377120e0c7140b3fd0b6..c4f0719eba859ce6d0fbb254e2cb91001614903e`.
 Task/slice: `rel-01-ci/rel-01`. Reviewer/actor: `verifier:rel-01`; pane: `w1:pR`.
-Same independent verifier; no additional reviewer or agent. This supersedes the old source review for current source. Historical review is retained in `rel-01-410644c.md`; it does not establish verification of this head. No DONE acceptance report.
+Same independent verifier. Prior source review archived as `rel-01-6900f63.md`; its PASS does not cover current source. This is a source review, not DONE acceptance or remote CI success.
 
 ## Verdict and risk judgment
 
-PASS for this bounded source repair. No blocking code finding. Two focused workflow tests passed independently; executable YAML comparison proves all existing workflow behavior is identical after removing the new first cleanup step. No broad re-review or Pages export was performed. Builder owns fresh required gates in serial; neither old five-command success nor this two-test run is asserted as new-head full verification.
+PASS: no blocking source finding in this narrow repair. Two focused workflow tests passed. Exact parsed-workflow comparison proves the only behavioral changes are removing the first tool-directory cleanup step and adding job env `TMPDIR: ${{ runner.temp }}`. Required five commands, setup actions/dependencies, permissions, trigger, timeout and Pages/checker bytes are unchanged. No deployment or removal shell step remains.
 
-`not-risky` describes source safety: deletion is limited to three literal, unused tool directories on the disposable hosted job, before repository checkout, with no workspace variable or broad path. Repository permission, trigger, dependencies and five required commands are unchanged. It does not assert that deleting those tools solves the observed hosted quota or that Actions passed. Capacity, hosted permissions, image layout, runtime and total job duration remain unproven until the new final-head Actions run. No push, install, spend, merge, source edit or local removal occurred.
+`not-risky` applies to this bounded source change: using runner scratch for temporary files avoids altering runner mounts or deleting toolchains. The job-wide env changes temporary-file placement for Python and other tools that honor TMPDIR, including dependency setup; it grants no additional permissions. Hosted filesystem capacity, runtime and final job success remain unverified by these local checks. New actual final-head Actions execution of all five checks remains required. No source edits, installs, push, spend, new reviewer/agent or merge; no multi-gigabyte export.
 
-## Failure inspected
+## Actual second CI failure and updated diagnosis
 
-Retained real Actions run `39986031745` failed on old head `1c47ca9e6104db90d09c5063257041667edeb863`, job `checks`, in `_check_pages_checkout.py` while copying publication files: `Disk quota exceeded`. Search-index and unittest steps were skipped after the failure. This is a genuine failed run, not successful CI evidence for either head.
+Inspected retained `final-ci.json` and `ci-capacity-counterfactual.log`: run `39987374176`, head `f76d7572a027ba9a4dd3f2d8c6234071fc5aeddb`, image Ubuntu 26.04.1, failed the checkout publication check with `Disk quota exceeded`. Root free space was 88G before cleanup and 105G after, with 18,028,625 free root inodes afterward. This disproves the previous repair's assumption that reclaiming root capacity was sufficient; root metrics do not measure the separate /tmp quota. Search-index and unittest steps were skipped.
 
-Run: https://github.com/Avistian/relational/actions/runs/39986031745
-Job: https://github.com/Avistian/relational/actions/runs/39986031745/job/120525336228
-Draft PR: https://github.com/Avistian/relational/pull/23 (retained snapshot; current new-head state not queried).
+[Failed run](https://github.com/Avistian/relational/actions/runs/39987374176) / [failed job](https://github.com/Avistian/relational/actions/runs/39987374176/job/120529951097). These are historical failures, not the new head's result.
 
-## Blast radius and executed proof
+Independently opened the [runner-images maintainer issue](https://github.com/actions/runner-images/issues/14777): contributor v-davit-ioramashvili reports reproducing Ubuntu 26.04 /tmp tmpfs quotas, with ordinary users reaching about 6.3G, and explicitly lists setting TMPDIR to runner.temp as an option. This supports the revised diagnosis and implementation; it does not prove this job now passes. No upstream claim that a blanket root cleanup fixes the quota is made.
 
-Safety fact: the added shell block can only target the three fixed hosted tool paths and does not change the checks that follow. `.github/workflows/pr-checks.yml:16` introduces the first step; `:18`–`:22` report byte/inode availability before and after the removal; `:20` names `/usr/local/lib/android`, `/usr/share/dotnet`, `/opt/ghc`; checkout follows at `:24`. These toolchains are not used by the Python/Node/shell checks. Read-only contents permission stays at `:6` and hosted runner at `:11`. Pages workflow and checkout-checker bytes are unchanged.
+## Blast-radius safety fact and executable proof
 
-Proof reached blast-radius level 4 for the structural assertions: parsed real old/new YAML with installed PyYAML; removed exactly the new first step and asserted complete semantic equality; asserted exact five-line cleanup block, no interpolated paths, and checkout ordering; checked the block with `bash -n` only; ran actual two-test module on this source. No deletion commands from the workflow were executed, mocked as successful, or measured locally. Actual capacity reclamation remains unproven.
+Safety fact: the unchanged checkout checker uses Python `tempfile.TemporaryDirectory` without an explicit directory, so job TMPDIR can redirect its export/build tree while all required checks retain their semantics.
 
-Repair RED commit `b1fbc63f` modifies only the test file. Independently compared its test bytes to final source: identical; its YAML equals pre-repair YAML and has no pre-checkout step. This establishes the expected failing seam; this verifier did not replay RED or claim builder's replay logs as independently executed. Final actual module run: 2 tests, 0 failures/errors/skips, exit 0.
+References: `.github/workflows/pr-checks.yml:15`–`:16` adds TMPDIR; checkout starts at `:18`; exact five commands remain at `:32`, `:35`, `:38`, `:41`, `:44`. `labs/_check_pages_checkout.py:16` uses TemporaryDirectory. No Pages/checker diff.
 
-## Explicit risks and evidence limits
+Proof reached skill level 4 for source structure and tempfile routing: parsed actual old/new YAML, removed the old first cleanup step and new env respectively, and asserted complete equality; asserted no sudo/removal commands remain; ran the real two-test module; launched a fresh process in the existing Python environment with a verifier-owned TMPDIR, invoked the same TemporaryDirectory API, asserted its parent is that directory, wrote two bytes and cleaned its own tiny fixture. Fresh process avoids cached tempfile selection. No full checker/export or hosted-capacity reproduction ran. Hosted filesystem backing and capacity remain the final Actions counterfactual's responsibility.
 
-- Hosted quota outcome: moderate uncertainty, high impact on delivery if it persists. `Disk quota exceeded` does not by itself establish whether bytes, inodes or a quota mechanism is limiting. `df -h`/`df -i` provide observations but impose no capacity threshold. Require the actual new-head job to execute all five checks successfully; no remote PASS is claimed.
-- Hosted image layout may change; missing cleanup paths are tolerated by `rm -rf`, so a future image could reclaim little space. The Python tool cache is outside the three target paths. A failed cleanup exits the step and blocks checks; there is no continue-on-error. Cost is failed CI, confined to the disposable job.
-- Regression test uses substring assertions, so it does not independently prove exact deletion targets/order or actual reclaimed capacity. Current source was checked with exact-line and whole-workflow equality assertions as additional independent proof. No test changes requested.
-- Added docs/evidence are historical proof from the earlier source and do not constitute new-head verification. Supplementary passing stderr/status publication remains a builder/lead evidence responsibility; deterministic rendered evidence is gate-bound. This bounded repair review does not rerender or amend it.
-- Launch environment gate: PASS on current exact head, `dirty:true` solely for retained untracked `.review/` artifacts. No tracked-source diff. Existing read-only Python and cache reused; no preparation/install. Configured full `/verify-project` command was intentionally not rerun by this verifier for this delta; focused module output below is not misrecorded as that skill's full output.
+## TDD correctness inspected
 
-Before completion: lead validates this review, builder completes serial gates, and actual final-head Actions CI must pass. Human merge authority remains required.
+`104936bd` is tests-only (test change replaces the ineffective cleanup contract with the TMPDIR contract). Its test bytes equal current source and its YAML equals pre-repair YAML, which lacks job TMPDIR. Inspected retained builder RED/GREEN logs: identical two tests, RED one assertion failure for missing TMPDIR, GREEN two passing. Independent current-source module run: 2 tests, no failures/errors/skips, exit 0. Builder RED execution is retained evidence, not claimed as independently executed here. No TDD implementation was performed by this verifier.
 
-## Raw output
+## Explicit risks, evidence limits and remaining gate
 
-### Focused actual test command
+- Host-side outcome is still unproven: context expansion, runner scratch permissions/capacity and elapsed time require actual new-head CI. Impact if wrong is failed validation; no publication occurs. Require all five steps to run successfully, not a green result with skipped checks.
+- TMPDIR is job-wide: temp files for multiple steps share runner scratch. Python respects it as independently demonstrated, but this tiny probe does not establish behavior or capacity for every tool. Existing unittest/CLI gates and actual hosted run remain required; old full-local results are historical.
+- The focused test proves the configured TMPDIR value, not actual filesystem backing or cleanup removal. Independent semantic comparison and no-removal assertions cover current-source removal; capacity remains remote evidence.
+- Documentation/evidence changes in this delta remain historical builder proof and are not accepted as final-head full verification by this review. Rendered proof is gate-bound; builder/lead owns supplementary raw stderr/status links and final evidence binding. No broad evidence re-review performed.
+- Launch environment gate PASS at this exact head; `dirty:true` is only retained untracked `.review/` verifier artifacts. No tracked-source changes. Configured full verify-project and four other commands were not repeated in this narrow review; focused output is not misrecorded as a full verify-project invocation.
 
-`/tmp/lead-wt/v-rel-01/.review/rel-01/6900f63/focused-tests.log`
+Lead validates this review, binds new final-head local/remote evidence, and owns counted-slot cleanup. No agent merge authorized.
+
+## Raw evidence
+
+### Independent focused tests
+
+`/tmp/lead-wt/v-rel-01/.review/rel-01/c4f0719/focused-tests.log`
 
 ```text
 $ /home/avist/Projects/relational/.venv/bin/python -B -m unittest tests.ci.test_pr_checks -v
-test_hosted_runner_reclaims_capacity_before_checkout (tests.ci.test_pr_checks.PullRequestChecks.test_hosted_runner_reclaims_capacity_before_checkout) ... ok
+test_large_publication_exports_use_disk_backed_runner_temp (tests.ci.test_pr_checks.PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp) ... ok
 test_pull_requests_run_all_five_checks_without_deploying (tests.ci.test_pr_checks.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... ok
 
 ----------------------------------------------------------------------
@@ -158,31 +162,22 @@ exit_code=0
 
 ```
 
-### Executable blast-radius assertions
+### Independent executable structural/routing proof
 
-`/tmp/lead-wt/v-rel-01/.review/rel-01/6900f63/delta-proof.log`
+`/tmp/lead-wt/v-rel-01/.review/rel-01/c4f0719/delta-proof.log`
 
 ```text
-PASS: new workflow minus exactly its first cleanup step is semantically identical to old workflow (all five checks, actions, dependencies, permissions, trigger and timeout unchanged).
-PASS: cleanup shell syntax checked only; no shell commands from the cleanup block were executed.
-PASS: cleanup argv is literal and exactly three unused hosted tool directories; no variables/globs/workspace/Python paths. df bytes/inodes precede and follow cleanup; cleanup precedes checkout.
-PASS: b1fbc63f is tests-only RED for this repair, tests byte-identical to final source, its workflow equals pre-repair workflow.
-PASS: Pages and checker bytes unchanged.
-{
-  "cleanup_lines": [
-    "df -h /",
-    "df -i /",
-    "sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc",
-    "df -h /",
-    "df -i /"
-  ]
-}
+PASS: parsed old YAML minus exactly cleanup step equals new YAML minus exactly TMPDIR job env. Exact five commands, dependencies, actions, trigger, timeout and permissions unchanged.
+PASS: no sudo/removal step remains. Pages/checker bytes unchanged.
+PASS: tests-only RED104936bd has final-identical tests, pre-fix YAML and no TMPDIR env.
+PASS: fresh Python TemporaryDirectory selected TMPDIR; wrote two bytes; cleaned only its own tiny fixture
+Hosted runner.temp filesystem capacity is NOT proven by this tiny local routing probe.
 
 ```
 
-### Environment launch gate
+### Launch environment gate
 
-`/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/1792772778161601064/status.json`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/env/relational/1792773457312621794/status.json`
 
 ```text
 {
@@ -191,10 +186,10 @@ PASS: Pages and checker bytes unchanged.
   "root": "/tmp/lead-wt/v-rel-01",
   "profile_sha256": "fbaecf787ed6355dc2b9f85a78c84012f1a2533147667b4ab827a033bf7a18c1",
   "source": {
-    "head": "6900f637951123104d01377120e0c7140b3fd0b6",
+    "head": "c4f0719eba859ce6d0fbb254e2cb91001614903e",
     "dirty": true
   },
-  "checked_at": 1792772776,
+  "checked_at": 1792773455,
   "checks": [
     {
       "kind": "lockfile",
@@ -378,41 +373,76 @@ PASS: Pages and checker bytes unchanged.
     }
   ],
   "verdict": "PASS",
-  "expires_at": 1792773076
+  "expires_at": 1792773755
 }
 
 ```
 
-### First CI failure metadata (historical)
+### Historical second CI metadata
 
-`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/remote-ci.json`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/final-ci.json`
 
 ```text
-{"conclusion":"failure","headSha":"1c47ca9e6104db90d09c5063257041667edeb863","jobs":[{"completedAt":"2026-10-23T16:23:24Z","conclusion":"failure","databaseId":120525336228,"name":"checks","startedAt":"2026-10-23T16:21:10Z","status":"completed","steps":[{"completedAt":"2026-10-23T16:21:11Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-10-23T16:21:10Z","status":"completed"},{"completedAt":"2026-10-23T16:22:29Z","conclusion":"success","name":"Run actions/checkout@v5","number":2,"startedAt":"2026-10-23T16:21:11Z","status":"completed"},{"completedAt":"2026-10-23T16:22:29Z","conclusion":"success","name":"Run actions/setup-python@v6","number":3,"startedAt":"2026-10-23T16:22:29Z","status":"completed"},{"completedAt":"2026-10-23T16:22:50Z","conclusion":"success","name":"Install check dependencies","number":4,"startedAt":"2026-10-23T16:22:29Z","status":"completed"},{"completedAt":"2026-10-23T16:22:50Z","conclusion":"success","name":"Check archived B05 sources for Google API keys","number":5,"startedAt":"2026-10-23T16:22:50Z","status":"completed"},{"completedAt":"2026-10-23T16:23:03Z","conclusion":"success","name":"Verify generated lesson visuals","number":6,"startedAt":"2026-10-23T16:22:50Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"failure","name":"Verify clean-checkout publication inputs","number":7,"startedAt":"2026-10-23T16:23:03Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Verify search index","number":8,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Run unit tests","number":9,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"skipped","name":"Post Run actions/setup-python@v6","number":17,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"success","name":"Post Run actions/checkout@v5","number":18,"startedAt":"2026-10-23T16:23:23Z","status":"completed"},{"completedAt":"2026-10-23T16:23:23Z","conclusion":"success","name":"Complete job","number":19,"startedAt":"2026-10-23T16:23:23Z","status":"completed"}],"url":"https://github.com/Avistian/relational/actions/runs/39986031745/job/120525336228"}],"status":"completed","url":"https://github.com/Avistian/relational/actions/runs/39986031745"}
+{"conclusion":"failure","headSha":"f76d7572a027ba9a4dd3f2d8c6234071fc5aeddb","jobs":[{"completedAt":"2026-10-23T16:34:29Z","conclusion":"failure","databaseId":120529951097,"name":"checks","startedAt":"2026-10-23T16:30:50Z","status":"completed","steps":[{"completedAt":"2026-10-23T16:30:52Z","conclusion":"success","name":"Set up job","number":1,"startedAt":"2026-10-23T16:30:50Z","status":"completed"},{"completedAt":"2026-10-23T16:32:26Z","conclusion":"success","name":"Reclaim space for publication checks","number":2,"startedAt":"2026-10-23T16:30:52Z","status":"completed"},{"completedAt":"2026-10-23T16:33:42Z","conclusion":"success","name":"Run actions/checkout@v5","number":3,"startedAt":"2026-10-23T16:32:26Z","status":"completed"},{"completedAt":"2026-10-23T16:33:43Z","conclusion":"success","name":"Run actions/setup-python@v6","number":4,"startedAt":"2026-10-23T16:33:42Z","status":"completed"},{"completedAt":"2026-10-23T16:34:02Z","conclusion":"success","name":"Install check dependencies","number":5,"startedAt":"2026-10-23T16:33:43Z","status":"completed"},{"completedAt":"2026-10-23T16:34:03Z","conclusion":"success","name":"Check archived B05 sources for Google API keys","number":6,"startedAt":"2026-10-23T16:34:02Z","status":"completed"},{"completedAt":"2026-10-23T16:34:11Z","conclusion":"success","name":"Verify generated lesson visuals","number":7,"startedAt":"2026-10-23T16:34:03Z","status":"completed"},{"completedAt":"2026-10-23T16:34:26Z","conclusion":"failure","name":"Verify clean-checkout publication inputs","number":8,"startedAt":"2026-10-23T16:34:11Z","status":"completed"},{"completedAt":"2026-10-23T16:34:26Z","conclusion":"skipped","name":"Verify search index","number":9,"startedAt":"2026-10-23T16:34:26Z","status":"completed"},{"completedAt":"2026-10-23T16:34:26Z","conclusion":"skipped","name":"Run unit tests","number":10,"startedAt":"2026-10-23T16:34:26Z","status":"completed"},{"completedAt":"2026-10-23T16:34:26Z","conclusion":"skipped","name":"Post Run actions/setup-python@v6","number":19,"startedAt":"2026-10-23T16:34:26Z","status":"completed"},{"completedAt":"2026-10-23T16:34:27Z","conclusion":"success","name":"Post Run actions/checkout@v5","number":20,"startedAt":"2026-10-23T16:34:26Z","status":"completed"},{"completedAt":"2026-10-23T16:34:27Z","conclusion":"success","name":"Complete job","number":21,"startedAt":"2026-10-23T16:34:27Z","status":"completed"}],"url":"https://github.com/Avistian/relational/actions/runs/39987374176/job/120529951097"}],"status":"completed","url":"https://github.com/Avistian/relational/actions/runs/39987374176"}
 
 ```
 
-### First CI failure raw excerpt
+### Builder retained repair RED
 
-`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/ci-first-failure.log` SHA256 `e584672544207086bd275db97dcf75cb3d1596cdd7b34ba3e93d8bee716739c5`
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/tmpdir-red.log`
 
 ```text
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2260552Z Traceback (most recent call last):
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2269215Z   File "/home/runner/work/relational/relational/labs/_check_pages_checkout.py", line 32, in <module>
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2270176Z     check()
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2276654Z   File "/home/runner/work/relational/relational/labs/_check_pages_checkout.py", line 27, in check
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2277810Z     raise AssertionError("Clean Git checkout Pages build failed:\n" + result.stderr)
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2278678Z AssertionError: Clean Git checkout Pages build failed:
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2279735Z cp: error copying 'labs/sources/l187/privacybook.pdf' to 'public/labs/sources/l187/privacybook.pdf': Disk quota exceeded
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2281195Z cp: error copying 'labs/sources/l187/source-ledger.json' to 'public/labs/sources/l187/source-ledger.json': Disk quota exceeded
-checks	Verify clean-checkout publication inputs	2026-10-23T16:23:23.2282578Z cp: error copying 'labs/sources/l188/2609.02766.html' to 'public/labs/sources/l188/2609.02766.html': Disk quota exceeded
+test_large_publication_exports_use_disk_backed_runner_temp (test_pr_checks.PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp) ... FAIL
+test_pull_requests_run_all_five_checks_without_deploying (test_pr_checks.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... ok
+
+======================================================================
+FAIL: test_large_publication_exports_use_disk_backed_runner_temp (test_pr_checks.PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/lead-wt/rel-01/tests/ci/test_pr_checks.py", line 48, in test_large_publication_exports_use_disk_backed_runner_temp
+    self.assertEqual(job.get('env', {}).get('TMPDIR'), '${{ runner.temp }}',
+AssertionError: None != '${{ runner.temp }}' : Publication export/build copies exceed Ubuntu 26.04 /tmp user quota
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.004s
+
+FAILED (failures=1)
+
 ```
 
-### Source status at review
+### Builder retained repair GREEN
+
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/tmpdir-green.log`
 
 ```text
+test_large_publication_exports_use_disk_backed_runner_temp (test_pr_checks.PullRequestChecks.test_large_publication_exports_use_disk_backed_runner_temp) ... ok
+test_pull_requests_run_all_five_checks_without_deploying (test_pr_checks.PullRequestChecks.test_pull_requests_run_all_five_checks_without_deploying) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.003s
+
+OK
+
+```
+
+### Historical second CI raw metrics/error
+
+`/tmp/lead-wt/process-lessons-v1/.lead/evidence/rel-01-cli/ci-capacity-counterfactual.log` SHA256 `39ec5c57a724f3fbe5a68533c4625f076a6a427d788360c15d021d83a3a01352`
+
+```text
+checks	Set up job	2026-10-23T16:30:50.7288153Z 26.04.1
+checks	Reclaim space for publication checks	2026-10-23T16:30:52.1621275Z /dev/root       145G   57G   88G  40% /
+checks	Reclaim space for publication checks	2026-10-23T16:30:52.1622440Z /dev/root      18690560 1031757 17658803    6% /
+checks	Reclaim space for publication checks	2026-10-23T16:32:26.5588158Z /dev/root       145G   40G  105G  28% /
+checks	Reclaim space for publication checks	2026-10-23T16:32:26.5596831Z /dev/root      18690560 661935 18028625    4% /
+checks	Verify clean-checkout publication inputs	2026-10-23T16:34:26.9447965Z cp: error copying 'labs/sources/l187/privacybook.pdf' to 'public/labs/sources/l187/privacybook.pdf': Disk quota exceeded
+```
+
+### Source status
+
+```text
+c4f0719eba859ce6d0fbb254e2cb91001614903e
 ?? .review/
-6900f637951123104d01377120e0c7140b3fd0b6
 ```
 
 </details>
