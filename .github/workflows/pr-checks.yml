@@ -10,17 +10,11 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Ubuntu 26.04 /tmp has a per-user tmpfs quota; export + build exceeds it.
+    # runner.temp lives on disk. Keep the publication check itself unchanged.
+    env:
+      TMPDIR: ${{ runner.temp }}
     steps:
-      # The tracked archive is 3.84 GiB; the checkout check exports and builds
-      # additional copies. These unused tools belong to this disposable runner.
-      - name: Reclaim space for publication checks
-        run: |
-          df -h /
-          df -i /
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
-          df -h /
-          df -i /
-
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
