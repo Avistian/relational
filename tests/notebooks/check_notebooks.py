@@ -8,6 +8,7 @@ from pathlib import Path
 import warnings
 
 import nbformat
+from nbformat.warnings import DuplicateCellId
 
 
 # Exact historical omissions, not a blanket allowance for ignored solutions.
@@ -140,6 +141,10 @@ def audit(root):
                 report['errors'].append(f'{name}: {type(error).__name__}: {error}')
             for warning in emitted:
                 report['warnings'].append({'path': name, 'category': warning.category.__name__, 'message': str(warning.message)})
+                # nbformat repairs duplicate IDs in memory; the source is still
+                # malformed. Missing-ID warnings retain their existing policy.
+                if issubclass(warning.category, DuplicateCellId):
+                    report['errors'].append(f'{name}: {warning.category.__name__}: {warning.message}')
     for group, paths in groups.items():
         for path in paths:
             if path not in allowed[group]:
