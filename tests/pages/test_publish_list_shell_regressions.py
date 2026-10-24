@@ -68,6 +68,15 @@ class ShellRegressions(unittest.TestCase):
                 other = self.workflow('other.yml', plan)
                 self.assert_rejected(other)
 
+    def test_public_root_removals_fail_closed_instead_of_comparing_equal(self):
+        self.assertEqual(self.shell_files('cp *.txt public/'), ['a.txt', 'b.txt'])
+        for operand in ('public', 'public/', 'public/.', './public//'):
+            with self.subTest(operand=operand):
+                plan = f'cp *.txt public/\nrm -rf {operand}'
+                self.assertEqual(self.shell_files(plan), [])
+                other = self.workflow('other.yml', plan)
+                self.assert_rejected(other)
+
 
 if __name__ == '__main__':
     unittest.main()
