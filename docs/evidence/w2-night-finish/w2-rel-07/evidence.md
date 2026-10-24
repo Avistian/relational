@@ -58,3 +58,5 @@ Piotr must review the data gaps and reporting qualification and explicitly dispo
 Fresh configured verification remains gated by the model execution boundary. Canonical execution remains NOT_RUN by prohibition.
 Package delivery has no new separate verifier review or hosted CI. Acceptance and merge remain unclaimed.
 No push, merge, install, spend, model/protocol run, source change, permission/profile/gate change, ledger rewrite or worker launch.
+
+Packaging structural preflight: BLOCKED_STRUCTURAL (exit 1). Exact diagnostic: `HUMAN EVIDENCE: code changed since reviewed source; only declared evidence folder may follow source SHA`. No retry or repair loop. See [delivery binding](delivery-binding.json).
