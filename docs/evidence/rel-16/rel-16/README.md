@@ -67,7 +67,36 @@ no additional plan-approval gate or out-of-scope design document was introduced.
   not independent verifier acceptance or a scientific experiment result.
 
 Raw outputs and machine-readable statuses are under `evidence/builder/`.
-Canonical replay status and the final source binding are in READY.json, written
-last. Separate verification/review remains owned and launched by the parent.
+The historical committed package contains this README as its narrative report;
+it does not contain a builder `report.md` or `READY.json`. The original builder
+wrote READY.json after commit, leaving it untracked in the original worktree.
+The separate verifier preserved that external receipt at
+`/home/avist/agent-stack/lead/.lead/tasks/rel-16/evidence/verifier/original-builder-READY.json`.
+Its canonical replay binding is historical evidence, not a replay of R1.
+Separate verification/review remains owned and launched by the parent.
 No subagents, installs, downloads, training, spend, push, merge or profile/gate
 changes were performed.
+
+## R1 correction
+
+R1 rejects quoted wildcard syntax before quote removal, wildcard `rm -rf`
+operands, and removal of the normalized `public` root with exit 2 and no JSON
+success report. Literal copies, unquoted copy globs, quoted ordinary filenames
+and literal subtree removal keep their existing behavior. These are bounded
+fail-closed checks; no general shell interpreter is introduced.
+
+New CLI regressions are in `tests/pages/test_publish_list_shell_regressions.py`.
+Each behavior was committed as genuine tests-only RED before its minimal fix.
+The original frozen test files and all historical raw evidence are unchanged.
+One additional root fixture initially expected GNU rm to accept `public/.`;
+GNU rm refuses that spelling. The incorrect fixture commit and raw failure
+remain preserved; a separate correction commit established clean, genuine RED
+using successful root-removal spellings before the production fix.
+
+New R1 raw logs, exact source bindings, provenance, and `report.md` live outside
+Git under `/home/avist/agent-stack/lead/.lead/tasks/rel-16/evidence/r1/`.
+Its `READY.json` is written last after the final commit and checks; it is an
+external task receipt, not a committed repository artifact. R1 runs focused
+Pages fixtures and the Bash/GNU cp destination inventory. Full `/verify-project`
+is NOT_RUN because the configured suite calls model.fit; no training or config
+change is authorized. No new canonical replay or independent review is claimed.
