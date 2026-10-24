@@ -1007,7 +1007,10 @@ def expand_plan(root, plan):
             for value in args[1:]:
                 if glob.has_magic(value):
                     raise ValueError('unsupported wildcard removal: ' + value)
-                prefix = safe_path(value, destination=True).removeprefix('public/').rstrip('/')
+                target = safe_path(value, destination=True)
+                if target == 'public':
+                    raise ValueError('unsupported public-root removal: ' + value)
+                prefix = target.removeprefix('public/').rstrip('/')
                 for name in list(files):
                     if name == prefix or name.startswith(prefix + '/'):
                         del files[name]
