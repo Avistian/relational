@@ -7,8 +7,8 @@ from refresh_lesson_visuals import ROOT, selected, key_for
 from visual_details import DETAILS
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--base-url');parser.add_argument('--report-dir',type=Path,default=ROOT/'reviews/lesson-visual-refinement-2026-10-07');args=parser.parse_args()
-    out=args.report_dir/('live' if args.base_url else 'local');out.mkdir(parents=True,exist_ok=True)
+    parser=argparse.ArgumentParser();parser.add_argument('--base-url');parser.add_argument('--report-dir',type=Path,default=ROOT/'reviews/lesson-visual-refinement-2026-10-07');parser.add_argument('--out',type=Path,help='Directory for review/report outputs');args=parser.parse_args()
+    out=args.out if args.out is not None else args.report_dir/('live' if args.base_url else 'local');out.mkdir(parents=True,exist_ok=True)
     class Quiet(SimpleHTTPRequestHandler):
         def log_message(self,*args):pass
     server=None
