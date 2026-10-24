@@ -28,7 +28,8 @@ class Map:
         self.groups.append(dict(x=x,y=y,w=w,h=h,label=label,role=role));return self
     def note(self,x,y,text):self.notes.append((x,y,text));return self
 
-MAPS={}
+# Lesson 58 has a story but no solution map; generator consumers still visit it.
+MAPS={58:[]}
 def diagram(n,key,title,subtitle,height,anchor,question,answer,scope):
     m=Map(key,title,subtitle,height,anchor,question,answer,scope);MAPS.setdefault(n,[]).append(m);return m
 
