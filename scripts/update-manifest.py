@@ -76,6 +76,21 @@ def build_manifest() -> dict:
     return {"version": 1, "lessons": lessons}
 
 
+def parsed_content_equal(current: object, expected: object) -> bool:
+    """Compare JSON recursively, keeping booleans distinct from numbers."""
+    if isinstance(current, bool) or isinstance(expected, bool):
+        return type(current) is type(expected) and current == expected
+    if isinstance(current, dict) and isinstance(expected, dict):
+        return current.keys() == expected.keys() and all(
+            parsed_content_equal(current[key], expected[key]) for key in current
+        )
+    if isinstance(current, list) and isinstance(expected, list):
+        return len(current) == len(expected) and all(
+            parsed_content_equal(left, right) for left, right in zip(current, expected)
+        )
+    return current == expected
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
@@ -88,7 +103,7 @@ def main() -> int:
         except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
             print(f"Manifest check failed: {MANIFEST}: {exc}", file=sys.stderr)
             return 1
-        if current != expected:
+        if not parsed_content_equal(current, expected):
             print(f"Manifest is stale: {MANIFEST}; run without --check to regenerate.",
                   file=sys.stderr)
             return 1
