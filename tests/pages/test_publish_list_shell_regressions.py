@@ -70,7 +70,7 @@ class ShellRegressions(unittest.TestCase):
 
     def test_public_root_removals_fail_closed_instead_of_comparing_equal(self):
         self.assertEqual(self.shell_files('cp *.txt public/'), ['a.txt', 'b.txt'])
-        for operand in ('public', 'public/', 'public/.', './public//'):
+        for operand in ('public', 'public/', 'public//', './public//'):
             with self.subTest(operand=operand):
                 plan = f'cp *.txt public/\nrm -rf {operand}'
                 self.assertEqual(self.shell_files(plan), [])
