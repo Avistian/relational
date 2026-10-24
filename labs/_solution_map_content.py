@@ -148,18 +148,6 @@ m.node('combine',365,430,280,'Fit / select combiner','Z and outer-training y','f
 m.edge('scatter','combine',via=[(835,405),(505,405)]).edge('combine','out',ports='rl',control=True).edge('serve','out',ports='bb',via=[(172,575),(832,575)])
 m.node('score',700,615,265,'Test labels → final score','compare to frozen single model','never select the oracle winner',role='query').edge('out','score',ports='rb',via=[(985,473),(985,710),(832,710)])
 
-m=diagram(58,'evidence-funnel','From a literature map to a testable experiment','A survey locates ideas; matched evidence tests a claim.',615,'A survey is',
- 'Which missing denominator could reverse a “best model” statement?',
- 'The task roster, eligible method coverage and evaluation regime define the denominator. Reconstruct them before ranking. Then use a proposed explanation to design an intervention, rather than treating a meta-feature correlation as a cause.',
- 'Evidence-synthesis workflow. The small benchmark in this lesson does not inherit the scope of the surveys it cites.')
-m.node('papers',35,165,280,'Paper claims','task type / model operation','what question did each study ask?',role='query').node('protocol',360,165,280,'Recover the experiment','datasets; splits; tuning budget','metric; missing methods')
-m.node('pool',685,165,280,'Matched denominator','which tasks / methods survive?','state exclusions before ranking')
-m.node('ranks',685,345,280,'Within-task comparisons','then equal-task aggregation','retain effect sizes and cost')
-m.node('hyp',360,345,280,'Candidate explanation','meta-feature association','a hypothesis, not identification')
-m.node('test',35,345,280,'Discriminating experiment','hold a baseline fixed','change the proposed mechanism',role='learn')
-m.edge('papers','protocol',ports='rl').edge('protocol','pool',ports='rl').edge('pool','ranks').edge('ranks','hyp',ports='lr').edge('hyp','test',ports='lr')
-m.note(45,535,'The output is a next experiment, not a universal leaderboard winner.')
-
 m=diagram(59,'nested-selection','Validation overfitting: nest the selector, not just the fit','A low error can select lucky noise even when each candidate is valid.',725,'Reconstruct the measuring instrument',
  'Does a leave-one-out score remain an unbiased report after it chooses the best candidate?',
  'Deleted-row residuals score a fixed candidate. Taking their minimum adapts to those scores. The outer held fold must be absent from candidate fitting AND PRESS selection, so it evaluates the whole adaptive procedure.',
