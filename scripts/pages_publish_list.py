@@ -990,6 +990,11 @@ def expand_plan(root, plan):
         line = re.sub(r' 2>/dev/null \|\| true$', '', line)
         if any(token in line for token in ('$', '`', ';', '|', '&', '>', '<', '\\')):
             raise ValueError('unsupported shell: ' + line)
+        # shlex removes quotes; expanding quoted metacharacters afterwards
+        # would invent files Bash never copied. Reject before losing quoting.
+        for quoted in re.finditer(r'''(['"])(.*?)\1''', line):
+            if glob.has_magic(quoted.group(2)):
+                raise ValueError('unsupported quoted wildcard: ' + line)
         words = shlex.split(line, comments=True)
         if not words:
             return
