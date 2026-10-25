@@ -54,6 +54,7 @@ const context = {document: {
   getElementById(id) { return id === 'lesson-search' ? box : out; },
   createElement: element
 }, HomeNav: {mount() {}}};
+context.window = context;
 vm.createContext(context);
 for (const script of SCRIPTS) vm.runInContext(script, context);
 box.value = 'single-table assumption';
@@ -70,7 +71,7 @@ if (!out.children.some(li => li.children.some(a =>
             if attrs.get("type") == "application/json":
                 continue
             scripts.append((ROOT / src).read_text() if src else body)
-        result = subprocess.run(["node", "-e", "const SCRIPTS = " + json.dumps(scripts) + ";\n" + code],
+        result = subprocess.run(["node"], input="const SCRIPTS = " + json.dumps(scripts) + ";\n" + code,
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
