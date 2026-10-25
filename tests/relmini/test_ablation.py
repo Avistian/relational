@@ -120,3 +120,10 @@ class EvidencePreservation(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 ablation.run(cache=root / 'missing', output=output, smoke=True)
             self.assertEqual(receipt.read_text(), 'historic evidence\n')
+
+
+class MissingCutoff(unittest.TestCase):
+    def test_guard_fails_closed_when_feature_cutoff_was_dropped(self):
+        frame = pd.DataFrame({'date': [pd.Timestamp('2000-01-03')]})
+        with self.assertRaisesRegex(ValueError, 'feature_cutoff'):
+            baseline.assert_no_leakage(frame)
