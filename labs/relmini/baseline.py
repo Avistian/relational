@@ -25,7 +25,7 @@ def load_real(split, cache=CACHE):
     return task, res, drivers
 
 
-def build_features(task, results, drivers):
+def build_features(task, results, drivers, constructor_results=None):
     """Row-aligned with `task`. Prior stats come from results with date < task date."""
     r = results[["driverId", "date", "grid", "position", "points"]].copy()
     r["driverId"] = r["driverId"].astype("int64")
@@ -56,6 +56,30 @@ def build_features(task, results, drivers):
     dob = drivers.assign(driverId=drivers["driverId"].astype("int64")).set_index("driverId")["dob"]
     m["f_age_years"] = ((m["date"] - m["driverId"].map(dob)).dt.days / 365.25).fillna(30.0)
     m["f_has_history"] = (n > 0).astype(float)
+    if constructor_results is not None:
+        # Resolve the driver's team from strictly prior results, never the label-day team.
+        teams = results[["driverId", "constructorId", "date"]].copy()
+        teams["driverId"] = teams["driverId"].astype("int64")
+        if teams.duplicated(["driverId", "date"]).any():
+            raise ValueError("ambiguous driver constructor at the same timestamp")
+        teams = teams.rename(columns={"date": "constructor_assignment_cutoff"})
+        m = pd.merge_asof(m.sort_values("date"), teams.sort_values("constructor_assignment_cutoff"),
+                          left_on="date", right_on="constructor_assignment_cutoff", by="driverId",
+                          direction="backward", allow_exact_matches=False)
+        c = constructor_results.groupby(["constructorId", "date"], as_index=False).agg(
+            cn=("points", "size"), cp=("points", "sum")).sort_values(["constructorId", "date"])
+        c[["cn", "cp"]] = c.groupby("constructorId")[["cn", "cp"]].cumsum()
+        c = c.rename(columns={"date": "constructor_cutoff"})
+        # Nullable join keys use a sentinel outside the cached nonnegative ID domain.
+        m["constructorId"] = m["constructorId"].fillna(-1).astype("int64")
+        c["constructorId"] = c["constructorId"].astype("int64")
+        m = pd.merge_asof(m.sort_values("date"), c.sort_values("constructor_cutoff"),
+                          left_on="date", right_on="constructor_cutoff", by="constructorId",
+                          direction="backward", allow_exact_matches=False)
+        m["f_constructor_n_prior"] = m["cn"].fillna(0.)
+        m["f_constructor_mean_points"] = (m["cp"] / m["cn"]).fillna(0.)
+        m["f_constructor_has_history"] = m["cn"].notna().astype(float)
+        m = m.drop(columns=["cn", "cp"]).sort_values("_row").reset_index(drop=True)
     return m.drop(columns=["_row", "n", "dnf", "grid", "points"])
 
 
