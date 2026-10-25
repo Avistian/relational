@@ -1,0 +1,1134 @@
+#!/usr/bin/env python3
+"""List the current Pages publication inputs without copying or executing shell.
+
+The default plan is frozen from pages.yml at REL-16's base revision. --workflow
+selects another plan; --compare checks destination file-set equality with a
+workflow, failing with exit 1 on drift. Gaps remain diagnostic (exit 0).
+Only the shell constructs used by that workflow are supported. New constructs
+fail closed (exit 2), requiring an explicit parser update and fixture coverage.
+"""
+import argparse
+import glob
+import json
+import os
+from pathlib import Path, PurePosixPath
+import re
+import shlex
+import sys
+
+import yaml
+
+# Frozen compatibility plan: no manifest-based additions. Keep this readable so
+# a future workflow change yields an ordinary reviewable source diff.
+DEFAULT_PLAN = r'''
+mkdir -p public/labs
+cp labs/_architecture_071_090.py labs/_architecture_091_100.py labs/_depth_091_100.py labs/_walkthrough_delivery.py public/labs/
+cp index.html notebooks.html flashcards.html .nojekyll public/
+cp -r assets lessons reference public/
+cp -r labs/html public/labs/
+cp -r labs/figures public/labs/
+cp labs/*.ipynb public/labs/ 2>/dev/null || true
+cp labs/README.md public/labs/ 2>/dev/null || true
+mkdir -p public/labs/evidence/l192 public/labs/solutions
+cp labs/l192-*.md labs/l192-*.txt labs/_*l192*.py labs/_*l192*.js labs/_*l192*.json public/labs/
+cp -r labs/evidence/l192/. public/labs/evidence/l192/
+cp labs/solutions/0192-open-fm-setup-data.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l200 public/labs/solutions public/modal
+cp labs/l200-*.md labs/_*l200*.py labs/_*l200*.json public/labs/
+cp -r labs/evidence/l200/. public/labs/evidence/l200/
+cp labs/solutions/0200-year-5-exit-exam.ipynb public/labs/solutions/
+cp modal/l200_repro.py public/modal/
+mkdir -p public/labs/evidence/l199 public/labs/solutions
+cp labs/l199-*.md labs/_*l199*.py labs/_*l199*.json public/labs/
+cp -r labs/evidence/l199/. public/labs/evidence/l199/
+cp labs/solutions/0199-select-primary-direction.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l198 public/labs/solutions
+cp labs/l198-*.md labs/_*l198*.py labs/_*l198*.json public/labs/
+cp -r labs/evidence/l198/. public/labs/evidence/l198/
+cp labs/solutions/0198-three-research-directions.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l197 public/labs/solutions
+cp labs/l197-*.md labs/_*l197*.py labs/_*l197*.json public/labs/
+cp -r labs/evidence/l197/. public/labs/evidence/l197/
+cp labs/solutions/0197-year-5-essay.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l196 public/labs/solutions
+cp labs/l196-*.md labs/_*l196*.py labs/_*l196*.json public/labs/
+cp -r labs/evidence/l196/. public/labs/evidence/l196/
+cp labs/solutions/0196-community-engagement.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l195 public/labs/solutions
+cp labs/l195-*.md labs/_*l195*.py labs/_*l195*.json public/labs/
+cp -r labs/evidence/l195/. public/labs/evidence/l195/
+cp labs/solutions/0195-thesis-stress-test.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l194 public/labs/solutions
+cp labs/l194-*.md labs/_*l194*.py labs/_*l194*.json public/labs/
+cp -r labs/evidence/l194/. public/labs/evidence/l194/
+cp labs/solutions/0194-open-fm-analysis-report.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l193 public/labs/solutions public/labs/figures/l193
+cp labs/l193-*.md labs/_*l193*.py labs/_*l193*.json public/labs/
+cp -r labs/evidence/l193/. public/labs/evidence/l193/
+cp -r labs/figures/l193/. public/labs/figures/l193/
+cp labs/solutions/0193-open-fm-full-task-set.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l190 public/labs/solutions
+cp labs/l190-*.md labs/_*l190*.py labs/_*l190*.json public/labs/
+cp -r labs/evidence/l190/. public/labs/evidence/l190/
+cp labs/solutions/0190-research-gap-checkpoint.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l191 public/labs/sources/l191 public/labs/solutions
+cp labs/l191-*.md labs/_*l191*.py labs/_*l191*.json public/labs/
+cp -r labs/evidence/l191/. public/labs/evidence/l191/
+cp -r labs/sources/l191/. public/labs/sources/l191/
+cp labs/solutions/0191-kumorfm2-sota-tracking.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l188 public/labs/solutions
+cp labs/l188-*.md labs/_*l188*.py labs/_*l188*.json public/labs/
+cp -r labs/evidence/l188/. public/labs/evidence/l188/
+cp labs/solutions/0188-systematic-literature-tracking.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l189 public/labs/solutions
+cp labs/l189-*.md labs/_*l189*.py labs/_*l189*.json public/labs/
+cp -r labs/evidence/l189/. public/labs/evidence/l189/
+cp labs/solutions/0189-identify-open-problems.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l182 public/labs/sources/l182 public/labs/solutions
+cp labs/l182-*.md labs/_*l182*.py labs/_*l182*.json public/labs/
+cp -r labs/evidence/l182/. public/labs/evidence/l182/
+cp -r labs/sources/l182/. public/labs/sources/l182/
+cp labs/solutions/0182-rdb-pfn-composite-message-passing.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l184 public/labs/solutions
+cp labs/l184-*.md labs/_*l184*.py labs/_*l184*.json public/labs/
+cp -r labs/evidence/l184/. public/labs/evidence/l184/
+cp labs/solutions/0184-gelgt-temporal-attention.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l186 public/labs/solutions
+cp labs/l186-*.md labs/_*l186*.py labs/_*l186*.json public/labs/
+cp -r labs/evidence/l186/. public/labs/evidence/l186/
+cp labs/solutions/0186-production-constraints.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l187 public/labs/solutions
+cp labs/l187-*.md labs/_*l187*.py labs/_*l187*.json public/labs/
+cp -r labs/evidence/l187/. public/labs/evidence/l187/
+cp labs/solutions/0187-ethics-privacy-reg.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l183 public/labs/solutions
+cp labs/l183-*.md labs/_*l183*.py labs/_*l183*.json labs/_check_viz_l183.js public/labs/
+cp -r labs/evidence/l183/. public/labs/evidence/l183/
+cp labs/solutions/0183-graph-transformer-pretraining.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l181 public/labs/solutions
+cp labs/l181-*.md labs/_*l181*.py labs/_*l181*.json public/labs/
+cp -r labs/evidence/l181/. public/labs/evidence/l181/
+cp labs/solutions/0181-relbench-v2-autocomplete.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l180 public/labs/solutions
+cp labs/l180-*.md labs/_*l180*.py labs/_*l180*.json public/labs/
+cp -r labs/evidence/l180/. public/labs/evidence/l180/
+cp labs/solutions/0180-public-encoder-checkpoint.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l178 public/labs/solutions
+cp labs/l178-*.md labs/_*l178*.py labs/_*l178*.json public/labs/
+cp -r labs/evidence/l178/. public/labs/evidence/l178/
+cp labs/solutions/0178-fair-model-comparison.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l177 public/labs/solutions
+cp labs/l177-*.md labs/_*l177*.py labs/_*l177*.json public/labs/
+cp -r labs/evidence/l177/. public/labs/evidence/l177/
+cp labs/solutions/0177-compute-budget-realism.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l176 public/labs/solutions
+cp labs/l176-*.md labs/_*l176*.py labs/_*l176*.json public/labs/
+cp -r labs/evidence/l176/. public/labs/evidence/l176/
+cp labs/solutions/0176-few-shot-icl-evaluation.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l175 public/labs/solutions
+cp labs/l175-*.md labs/_*l175*.py labs/_*l175*.json public/labs/
+cp -r labs/evidence/l175/. public/labs/evidence/l175/
+cp labs/solutions/0175-zero-shot-evaluation.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l174 public/labs/solutions
+cp labs/l174-*.md labs/_*l174*.py labs/_*l174*.json public/labs/
+cp -r labs/evidence/l174/. public/labs/evidence/l174/
+cp labs/solutions/0174-fine-tuning-protocol.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l173 public/labs/solutions
+cp labs/l173-*.md labs/_*l173*.py labs/_*l173*.json public/labs/
+cp -r labs/evidence/l173/. public/labs/evidence/l173/
+cp labs/solutions/0173-multi-task-pretraining.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/l172 public/labs/sources/l172 public/labs/solutions
+cp labs/l172-*.md labs/_*l172*.py labs/_*l172*.json public/labs/
+cp -r labs/evidence/l172/. public/labs/evidence/l172/
+cp -r labs/sources/l172/. public/labs/sources/l172/
+cp labs/solutions/0172-schema-tokenization.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l171 public/labs/sources/l171
+cp labs/l171-*.md labs/_*l171*.py labs/_*l171*.json public/labs/
+cp -r labs/evidence/l171/. public/labs/evidence/l171/
+cp -r labs/sources/l171/. public/labs/sources/l171/
+cp labs/solutions/0171-corpus-of-databases.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l170
+cp labs/l170-*.md labs/_*l170*.py labs/_*l170*.json public/labs/
+cp -r labs/evidence/l170/. public/labs/evidence/l170/
+cp labs/solutions/0170-fm-design-checkpoint.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l169 public/modal
+cp labs/l169-*.md labs/_*l169*.py labs/_*l169*.json public/labs/
+cp -r labs/evidence/l169/. public/labs/evidence/l169/
+cp labs/solutions/0169-scaling-laws-open-questions.ipynb public/labs/solutions/
+cp modal/l169_repro.py modal/l169_recovery.py modal/l169_tail.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l168 public/labs/sources/l168 public/modal
+cp labs/l168-*.md labs/_*l168*.py labs/_*l168*.json public/labs/
+cp -r labs/evidence/l168/. public/labs/evidence/l168/
+cp -r labs/sources/l168/. public/labs/sources/l168/
+cp labs/solutions/0168-cross-database-generalization.ipynb public/labs/solutions/
+cp modal/l168_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l167 public/labs/sources/l167
+cp labs/l167-*.md labs/_*l167*.py labs/_*l167*.json public/labs/
+cp -r labs/evidence/l167/. public/labs/evidence/l167/
+cp -r labs/sources/l167/. public/labs/sources/l167/
+cp labs/solutions/0167-tabular-to-relational-fm-transfer.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l166 public/labs/sources/l166 public/modal
+cp labs/l166-*.md labs/l166-requirements.txt labs/_*l166*.py labs/_*l166*.json public/labs/
+cp -r labs/evidence/l166/. public/labs/evidence/l166/
+cp -r labs/sources/l166/. public/labs/sources/l166/
+cp labs/solutions/0166-rdb-pfn-synthetic-relational-priors.ipynb public/labs/solutions/
+cp modal/l166_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l165 public/labs/sources/l165
+cp labs/l165-*.md labs/_*l165*.py labs/_*l165*.json public/labs/
+cp -r labs/evidence/l165/. public/labs/evidence/l165/
+cp -r labs/sources/l165/. public/labs/sources/l165/
+cp labs/solutions/0165-kumorfm-in-context-relational-learning.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l164 public/labs/sources/l164 public/modal
+cp labs/l164-*.md labs/l164-requirements.txt labs/_*l164*.py labs/_*l164*.json public/labs/
+cp -r labs/evidence/l164/. public/labs/evidence/l164/
+cp -r labs/sources/l164/. public/labs/sources/l164/
+cp labs/solutions/0164-griffin-graph-centric-rdb-fm.ipynb public/labs/solutions/
+cp modal/l164_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l163 public/labs/sources/l163
+cp labs/l163-*.md labs/l163-requirements.txt labs/_*l163*.py labs/_*l163*.json public/labs/
+cp -r labs/evidence/l163/. public/labs/evidence/l163/
+cp -r labs/sources/l163/. public/labs/sources/l163/
+cp labs/solutions/0163-lm-encoders-for-rows.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l162 public/labs/sources/l162
+cp labs/l162-*.md labs/_*l162*.py labs/_*l162*.json public/labs/
+cp -r labs/evidence/l162/. public/labs/evidence/l162/
+cp -r labs/sources/l162/. public/labs/sources/l162/
+cp labs/solutions/0162-the-relational-fm-vision.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l161 public/labs/sources/l161
+cp labs/l161-*.md labs/_*l161*.py labs/_*l161*.json public/labs/
+cp -r labs/evidence/l161/. public/labs/evidence/l161/
+cp -r labs/sources/l161/. public/labs/sources/l161/
+cp labs/solutions/0161-what-is-a-foundation-model.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l160
+cp labs/l160-*.md labs/l160-*.json labs/_*l160*.py labs/_*l160*.json public/labs/
+cp -r labs/evidence/l160/. public/labs/evidence/l160/
+cp labs/solutions/0160-year-4-exit-exam.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l159 public/labs/sources/l159
+cp labs/l159-*.md labs/_*l159*.py labs/_*l159*.json public/labs/
+cp -r labs/evidence/l159/. public/labs/evidence/l159/
+cp -r labs/sources/l159/. public/labs/sources/l159/
+cp labs/solutions/0159-foundation-model-preview.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l158
+cp labs/l158-reproduction.md labs/l158-essay-template.md labs/_*l158*.py labs/_*l158*.json public/labs/
+cp -r labs/evidence/l158/. public/labs/evidence/l158/
+cp labs/solutions/0158-year-4-synthesis.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l154
+cp labs/l154-reproduction.md labs/_*l154*.py labs/_*l154*.json public/labs/
+cp -r labs/evidence/l154/. public/labs/evidence/l154/
+cp labs/solutions/0154-portfolio-synthesis.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l153 public/labs/sources/l153 public/modal
+cp labs/l153-reproduction.md labs/l153-entry-template.md labs/_*l153*.json labs/_*l153*.py labs/_viz_check_l153.js public/labs/
+cp -r labs/evidence/l153/. public/labs/evidence/l153/
+cp -r labs/sources/l153/. public/labs/sources/l153/
+cp labs/solutions/0153-recommendation-portfolio.ipynb public/labs/solutions/
+cp modal/l153_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l152 public/labs/sources/l152 public/modal
+cp labs/l152-reproduction.md labs/l152-entry-template.md labs/_*l152*.json labs/_*l152*.py labs/_viz_check_l152.js public/labs/
+cp -r labs/evidence/l152/. public/labs/evidence/l152/
+cp -r labs/sources/l152/. public/labs/sources/l152/
+cp labs/solutions/0152-regression-portfolio.ipynb public/labs/solutions/
+cp modal/l152_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l151 public/modal
+cp labs/l151-reproduction.md labs/l151-entry-template.md labs/_*l151*.json labs/_*l151*.py public/labs/
+cp -r labs/evidence/l151/. public/labs/evidence/l151/
+cp labs/solutions/0151-classification-portfolio.ipynb public/labs/solutions/
+cp modal/l151_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l150 public/modal
+cp labs/l150-reproduction.md labs/l150-report-template.md labs/_*l150*.json labs/_*l150*.py public/labs/
+cp -r labs/evidence/l150/. public/labs/evidence/l150/
+cp labs/solutions/0150-q3-reproduction-checkpoint.ipynb public/labs/solutions/
+cp modal/l150_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l149 public/modal
+cp labs/l149-reproduction.md labs/_*l149*.json labs/_*l149*.py public/labs/
+cp -r labs/evidence/l149/. public/labs/evidence/l149/
+cp labs/solutions/0149-weakest-relbench-tasks.ipynb public/labs/solutions/
+cp modal/l149_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l148 public/modal
+cp labs/l148-reproduction.md labs/_*l148*.json labs/_*l148*.py public/labs/
+cp -r labs/evidence/l148/. public/labs/evidence/l148/
+cp labs/solutions/0148-ablation-discipline.ipynb public/labs/solutions/
+cp modal/l148_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l147
+cp labs/l147-reproduction.md labs/_*l147*.json labs/_*l147*.py public/labs/
+cp -r labs/evidence/l147/. public/labs/evidence/l147/
+cp labs/solutions/0147-next-generation-architectures.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l146 public/modal
+cp labs/l146-reproduction.md labs/_*l146*.json labs/_*l146*.py public/labs/
+cp -r labs/evidence/l146/. public/labs/evidence/l146/
+cp labs/solutions/0146-gnn-vs-graph-transformer.ipynb public/labs/solutions/
+cp modal/l146_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l145 public/labs/sources/l145 public/modal
+cp labs/l145-reproduction.md labs/_*l145*.json labs/_*l145*.py public/labs/
+cp -r labs/evidence/l145/. public/labs/evidence/l145/
+cp -r labs/sources/l145/. public/labs/sources/l145/
+cp labs/solutions/0145-relational-graph-transformer.ipynb public/labs/solutions/
+cp modal/l145_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l144 public/modal
+cp labs/l144-reproduction.md labs/_*l144*.json labs/_*l144*.py public/labs/
+cp -r labs/evidence/l144/. public/labs/evidence/l144/
+cp labs/solutions/0144-contextgnn.ipynb public/labs/solutions/
+cp modal/l144_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l143 public/modal
+cp labs/l143-reproduction.md labs/_*l143*.json labs/_*l143*.py public/labs/
+cp -r labs/evidence/l143/. public/labs/evidence/l143/
+cp labs/solutions/0143-relgnn-reproduction.ipynb public/labs/solutions/
+cp modal/l143_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l142 public/modal
+cp labs/l142-reproduction.md labs/_*l142*.json labs/_*l142*.py public/labs/
+cp -r labs/evidence/l142/. public/labs/evidence/l142/
+cp labs/solutions/0142-many-to-many-edge-pathology.ipynb public/labs/solutions/
+cp modal/l142_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l141 public/modal
+cp labs/l141-reproduction.md labs/_*l141*.json labs/_*l141*.py public/labs/
+cp -r labs/evidence/l141/. public/labs/evidence/l141/
+cp labs/solutions/0141-composite-message-passing.ipynb public/labs/solutions/
+cp modal/l141_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l140 public/modal
+cp labs/l140-reproduction.md labs/_*l140*.json labs/_*l140*.py public/labs/
+cp -r labs/evidence/l140/. public/labs/evidence/l140/
+cp labs/solutions/0140-rdl-reproduction-checkpoint.ipynb public/labs/solutions/
+cp modal/l140_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l139 public/modal
+cp labs/l139-reproduction.md labs/_*l139*.json labs/_*l139*.py public/labs/
+cp -r labs/evidence/l139/. public/labs/evidence/l139/
+cp labs/solutions/0139-healthcare-trial.ipynb public/labs/solutions/
+cp modal/l139_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l138 public/modal
+cp labs/l138-reproduction.md labs/_*l138*.json labs/_*l138*.py public/labs/
+cp -r labs/evidence/l138/. public/labs/evidence/l138/
+cp labs/solutions/0138-ecommerce-amazon.ipynb public/labs/solutions/
+cp modal/l138_*.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l137 public/modal
+cp labs/l137-reproduction.md labs/_*l137*.json labs/_*l137*.py public/labs/
+cp -r labs/evidence/l137/. public/labs/evidence/l137/
+cp labs/solutions/0137-error-analysis-reg.ipynb public/labs/solutions/
+cp modal/l137_repro.py modal/l137_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l136 public/modal
+cp labs/l136-reproduction.md labs/_*l136*.json labs/_*l136*.py public/labs/
+cp -r labs/evidence/l136/. public/labs/evidence/l136/
+cp labs/solutions/0136-leaderboard-literacy.ipynb public/labs/solutions/
+cp modal/l136_repro.py modal/l136_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l135 public/modal
+cp labs/l135-reproduction.md labs/_*l135*.json labs/_*l135*.py public/labs/
+cp -r labs/evidence/l135/. public/labs/evidence/l135/
+cp labs/solutions/0135-tuning-on-reg.ipynb public/labs/solutions/
+cp modal/l135_repro.py modal/l135_notebook_check.py public/modal/
+cp labs/_gallery_delivery.py public/labs/
+mkdir -p public/labs/evidence/l111 public/labs/solutions
+cp -r labs/evidence/l111/. public/labs/evidence/l111/
+cp labs/l111-reproduction.md labs/_*l111*.py labs/_execution_l111_results.json public/labs/
+cp labs/solutions/0111-ogb-benchmark-contract.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l134 public/labs/sources/l134 public/modal
+cp labs/l134-reproduction.md labs/_*l134*.json labs/_*l134*.py public/labs/
+cp -r labs/evidence/l134/. public/labs/evidence/l134/
+cp -r labs/sources/l134/. public/labs/sources/l134/
+cp labs/solutions/0134-training-at-scale.ipynb public/labs/solutions/
+cp modal/l134_repro.py modal/l134_scale.py modal/l134_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l133 public/modal
+cp labs/l133-reproduction.md labs/_*l133*.json labs/_*l133*.py public/labs/
+cp -r labs/evidence/l133/. public/labs/evidence/l133/
+cp labs/solutions/0133-hetero-conv-reg.ipynb public/labs/solutions/
+cp modal/l133_repro.py modal/l133_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l132 public/labs/sources/l132 public/modal
+cp labs/l132-reproduction.md labs/_*l132*.json labs/_*l132*.py public/labs/
+cp -r labs/evidence/l132/. public/labs/evidence/l132/
+cp -r labs/sources/l132/. public/labs/sources/l132/
+cp labs/solutions/0132-identity-aware-message-passing.ipynb public/labs/solutions/
+cp modal/l132_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l131 public/modal
+cp labs/l131-reproduction.md labs/_*l131*.json labs/_*l131*.py public/labs/
+cp -r labs/evidence/l131/. public/labs/evidence/l131/
+cp labs/solutions/0131-gnn-tabular-stack.ipynb public/labs/solutions/
+cp modal/l131_repro.py modal/l131_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l130 public/modal
+cp labs/l130-reproduction.md labs/l130-defense.md labs/_*l130*.json labs/_*l130*.py public/labs/
+cp -r labs/evidence/l130/. public/labs/evidence/l130/
+cp labs/solutions/0130-rdl-checkpoint.ipynb public/labs/solutions/
+cp modal/l130_repro.py modal/l130_notebook_check.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l129
+cp labs/l129-reproduction.md labs/l129-effort-log.md labs/requirements-l129-runtime.txt labs/_*l129*.json labs/_*l129*.py public/labs/
+cp -r labs/evidence/l129/. public/labs/evidence/l129/
+cp labs/solutions/0129-manual-feature-engineering.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l128 public/labs/sources/l128 public/modal
+cp labs/l128-reproduction.md labs/_*l128*.json labs/_*l128*.py public/labs/
+cp -r labs/evidence/l128/. public/labs/evidence/l128/
+cp -r labs/sources/l128/. public/labs/sources/l128/
+cp labs/solutions/0128-task-taxonomy.ipynb public/labs/solutions/
+cp modal/l128_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l127 public/modal
+cp labs/l127-reproduction.md labs/_*l127*.json labs/_*l127*.py public/labs/
+cp -r labs/evidence/l127/. public/labs/evidence/l127/
+cp labs/solutions/0127-relbench-v1.ipynb public/labs/solutions/
+cp modal/l127_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l126
+cp labs/l126-reproduction.md labs/_*l126*.json labs/_*l126*.py public/labs/
+cp -r labs/evidence/l126/. public/labs/evidence/l126/
+cp labs/solutions/0126-relbench-beta.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l125
+cp labs/l125-reproduction.md labs/_*l125*.json labs/_*l125*.py public/labs/
+cp -r labs/evidence/l125/. public/labs/evidence/l125/
+cp labs/solutions/0125-pytorch-frame-deep-dive.ipynb public/labs/solutions/
+mkdir -p public/labs/solutions public/labs/evidence/l124 public/modal
+cp labs/l124-reproduction.md labs/_*l124*.json labs/_*l124*.py public/labs/
+cp -r labs/evidence/l124/. public/labs/evidence/l124/
+cp labs/solutions/0124-entity-task-tables.ipynb public/labs/solutions/
+cp modal/l124_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l123 public/modal
+cp labs/l123-reproduction.md labs/_*l123*.json labs/_*l123*.py public/labs/
+cp -r labs/evidence/l123/. public/labs/evidence/l123/
+cp labs/solutions/0123-temporal-heterogeneous-graphs.ipynb public/labs/solutions/
+cp modal/l123_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l122 public/modal
+cp labs/l122-reproduction.md labs/_*l122*.json labs/_*l122*.py public/labs/
+cp -r labs/evidence/l122/. public/labs/evidence/l122/
+cp labs/solutions/0122-reg-construction.ipynb public/labs/solutions/
+cp modal/l122_repro.py public/modal/
+mkdir -p public/labs/solutions public/modal
+cp labs/l121-*.md labs/_*l121*.json labs/_*l121*.py labs/_preflight_l121_results.txt public/labs/
+cp labs/solutions/0121-history-relational-ml.ipynb public/labs/solutions/
+cp modal/l121_pilot.py public/modal/
+mkdir -p public/labs/evidence/l119 public/labs/solutions public/modal
+cp labs/l119-reproduction.md labs/l119-writing-template.md labs/_*l119*.json labs/_*l119*.py public/labs/
+cp -r labs/evidence/l119/. public/labs/evidence/l119/
+cp labs/solutions/0119-year-3-synthesis.ipynb public/labs/solutions/
+cp modal/l119_repro.py public/modal/
+mkdir -p public/labs/evidence/l120
+cp labs/l120-reproduction.md labs/l120-submission.md labs/_*l120*.json labs/_*l120*.py public/labs/
+cp -r labs/evidence/l120/. public/labs/evidence/l120/
+cp labs/solutions/0120-year-3-exit-exam.ipynb public/labs/solutions/
+cp modal/l120_repro.py public/modal/
+mkdir -p public/labs/solutions public/modal
+cp labs/l118-reproduction.md labs/requirements-l118-runtime.txt labs/_*l118*.json labs/_*l118*.py public/labs/
+cp labs/solutions/0118-cvitkovic-relational-gnn.ipynb public/labs/solutions/
+cp modal/l118_pilot.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l117 public/modal
+cp labs/l117-reproduction.md labs/requirements-l117-runtime.txt labs/_*l117*.json labs/_*l117*.py public/labs/
+cp labs/solutions/0117-rdl-bridge.ipynb public/labs/solutions/
+cp -r labs/evidence/l117/. public/labs/evidence/l117/
+cp modal/l117_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l116 public/modal
+cp labs/l116-reproduction.md labs/requirements-l116-runtime.txt labs/_*l116*.json labs/_*l116*.py public/labs/
+cp labs/solutions/0116-debug-gnn-training.ipynb public/labs/solutions/
+cp -r labs/evidence/l116/. public/labs/evidence/l116/
+cp modal/l116_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l107
+cp labs/l107-reproduction.md labs/requirements-l107-runtime.txt labs/requirements-l107-authoring.txt labs/_*l107*.json labs/_*l107*.py public/labs/
+cp labs/solutions/0107-snapshot-methods.ipynb public/labs/solutions/
+cp -r labs/evidence/l107/. public/labs/evidence/l107/
+mkdir -p public/modal
+cp modal/l107_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l106
+cp labs/l106-reproduction.md labs/requirements-l106-runtime.txt labs/requirements-l106-authoring.txt labs/_*l106*.json labs/_*l106*.py public/labs/
+cp labs/solutions/0106-temporal-link-prediction.ipynb public/labs/solutions/
+cp -r labs/evidence/l106/. public/labs/evidence/l106/
+mkdir -p public/labs/solutions public/labs/evidence/l105
+cp labs/l105-reproduction.md labs/requirements-l105-runtime.txt labs/requirements-l105-authoring.txt labs/_*l105*.json labs/_*l105*.py public/labs/
+cp labs/solutions/0105-continuous-time.ipynb public/labs/solutions/
+cp -r labs/evidence/l105/. public/labs/evidence/l105/
+mkdir -p public/labs/solutions public/labs/evidence/l104 public/modal
+cp labs/l104-reproduction.md labs/requirements-l104-runtime.txt labs/requirements-l104-authoring.txt labs/_*l104*.json labs/_*l104*.py public/labs/
+cp labs/solutions/0104-information-leakage-in-time.ipynb public/labs/solutions/
+cp -r labs/evidence/l104/. public/labs/evidence/l104/
+cp modal/l104_replay.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l115 public/modal
+cp labs/l115-reproduction.md labs/requirements-l115-runtime.txt labs/_*l115*.json labs/_*l115*.py public/labs/
+cp labs/solutions/0115-graph-ml-design-patterns.ipynb public/labs/solutions/
+cp -r labs/evidence/l115/. public/labs/evidence/l115/
+cp modal/l115_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l114 public/modal
+cp labs/l114-reproduction.md labs/requirements-l114-runtime.txt labs/_*l114*.json labs/_*l114*.py public/labs/
+cp labs/solutions/0114-ogb-error-analysis.ipynb public/labs/solutions/
+cp -r labs/evidence/l114/. public/labs/evidence/l114/
+cp modal/l114_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l113 public/modal
+cp labs/l113-reproduction.md labs/requirements-l113-runtime.txt labs/_*l113*.json labs/_*l113*.py public/labs/
+cp labs/solutions/0113-scaling-ogb.ipynb public/labs/solutions/
+cp -r labs/evidence/l113/. public/labs/evidence/l113/
+cp modal/l113_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l112 public/modal
+cp labs/l112-reproduction.md labs/requirements-l112-runtime.txt labs/_*l112*.json labs/_*l112*.py public/labs/
+cp labs/solutions/0112-ogb-gcn-reproduction.ipynb public/labs/solutions/
+cp -r labs/evidence/l112/. public/labs/evidence/l112/
+cp modal/l112_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l110 public/modal
+cp labs/l110-reproduction.md labs/requirements-l110-*.txt labs/_*l110*.json labs/_*l110*.py public/labs/
+cp labs/solutions/0110-temporal-gnn-checkpoint.ipynb public/labs/solutions/
+cp -r labs/evidence/l110/. public/labs/evidence/l110/
+cp modal/l110_repro.py public/modal/
+mkdir -p public/labs/solutions public/labs/evidence/l109
+cp labs/l109-reproduction.md labs/requirements-l109-*.txt labs/_*l109*.json labs/_*l109*.py public/labs/
+cp labs/solutions/0109-database-timestamp-contracts.ipynb public/labs/solutions/
+cp -r labs/evidence/l109/. public/labs/evidence/l109/
+mkdir -p public/labs/evidence/l108 public/labs/solutions public/modal
+cp labs/l108-reproduction.md labs/requirements-l108-*.txt labs/_*l108*.json labs/_*l108*.py public/labs/
+cp labs/0108-temporal-neighbor-sampling.ipynb public/labs/
+cp labs/solutions/0108-temporal-neighbor-sampling.ipynb public/labs/solutions/
+cp -r labs/evidence/l108/. public/labs/evidence/l108/
+cp modal/l108_replay.py public/modal/
+mkdir -p public/labs/solutions public/modal
+cp labs/l103-reproduction.md labs/requirements-l103-runtime.txt labs/requirements-l103-authoring.txt labs/_*l103*.json labs/_*l103*.py public/labs/
+cp labs/0103-tgat.ipynb public/labs/
+cp labs/solutions/0103-tgat.ipynb public/labs/solutions/
+cp modal/l103_paper_repro.py public/modal/
+mkdir -p public/labs/evidence/l103
+cp -r labs/evidence/l103/. public/labs/evidence/l103/
+mkdir -p public/labs/solutions public/modal public/labs/evidence/l102
+cp labs/l102-reproduction.md labs/requirements-l102-runtime.txt labs/_*l102*.json labs/_*l102*.py public/labs/
+cp labs/0102-temporal-graph-networks.ipynb public/labs/
+cp labs/solutions/0102-temporal-graph-networks.ipynb public/labs/solutions/
+cp -r labs/evidence/l102/. public/labs/evidence/l102/
+cp modal/l102_paper_repro.py public/modal/
+mkdir -p public/labs/solutions
+cp -r plan public/
+cp labs/l101-reproduction.md labs/requirements-l101-runtime.txt labs/_*l101*.json labs/_*l101.py labs/_predictions_l101.npz public/labs/
+cp labs/0101-static-vs-temporal.ipynb public/labs/
+cp labs/solutions/0101-static-vs-temporal.ipynb public/labs/solutions/
+cp MISSION.md public/
+cp labs/l100-reproduction.md labs/requirements-l100-*.txt labs/_*l100*.json labs/_*l100.py public/labs/
+mkdir -p public/labs/solutions public/modal
+cp labs/solutions/0100-heterogeneous-gnn-checkpoint.ipynb public/labs/solutions/
+cp -r labs/_experiment_l100_results-checkpoints public/labs/
+cp modal/l100_paper_repro.py public/modal/
+cp labs/l099-reproduction.md labs/requirements-l099-*.txt labs/_*l099*.json labs/_*l099.py public/labs/
+mkdir -p public/labs/solutions public/plan
+cp labs/solutions/0099-rgcn-vs-hgt.ipynb public/labs/solutions/
+cp -r labs/_experiment_l099_results-checkpoints public/labs/
+cp plan/year-3.md public/plan/
+cp labs/l098-reproduction.md labs/requirements-l098-*.txt labs/_*l098*.json labs/_*l098.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0098-hetero-mini-batching.ipynb public/labs/solutions/
+cp labs/l097-reproduction.md labs/requirements-l097-*.txt labs/_*l097*.json labs/_*l097.py public/labs/
+mkdir -p public/labs/solutions public/labs/results
+cp labs/solutions/0097-negative-sampling.ipynb public/labs/solutions/
+cp -r labs/results/l097 public/labs/results/
+cp labs/l096-reproduction.md labs/requirements-l096-*.txt labs/_*l096*.json labs/_*l096.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0096-multi-relational-data.ipynb public/labs/solutions/
+cp labs/l095-reproduction.md labs/requirements-l095-*.txt labs/_*l095*.json labs/_*l095.py public/labs/
+mkdir -p public/labs/results/l095 public/labs/solutions
+cp labs/results/l095/*.json public/labs/results/l095/
+cp labs/solutions/0095-bipartite-graphs.ipynb public/labs/solutions/
+cp labs/l094-reproduction.md labs/requirements-l094-*.txt labs/_*l094*.json labs/_*l094.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0094-hin-survey.ipynb public/labs/solutions/
+cp labs/l093-reproduction.md labs/requirements-l093-*.txt labs/_*l093*.json labs/_*l093.py public/labs/
+mkdir -p public/labs/solutions public/modal
+cp labs/solutions/0093-hgt.ipynb public/labs/solutions/
+cp modal/l093_paper_repro.py public/modal/
+cp labs/l092-reproduction.md labs/requirements-l092-*.txt labs/_*l092*.json labs/_*l092.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0092-meta-paths.ipynb public/labs/solutions/
+cp labs/l091-reproduction.md labs/requirements-l091-*.txt labs/_*l091*.json labs/_*l091.py public/labs/
+mkdir -p public/labs/solutions public/labs/data/l091
+cp labs/solutions/0091-r-gcn.ipynb public/labs/solutions/
+cp labs/data/l091/aifb.tgz public/labs/data/l091/
+mkdir -p public/labs/sources
+cp -r labs/sources/l090 public/labs/sources/
+cp labs/l090-reproduction.md labs/requirements-l090-*.txt labs/_*l090*.json public/labs/
+cp labs/_clean_environment_l090.py labs/_run_l090.py labs/_verify_l090.py labs/_audit_l090.py labs/_figures_l090.py labs/_build_l090.py labs/_execute_l090.py labs/_delivery_l090.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0090-gnn-checkpoint.ipynb public/labs/solutions/
+cp labs/l089-reproduction.md labs/requirements-l089-*.txt labs/_sources_l089.json labs/_paper_l089_results.json labs/_teaching_l089_results.json labs/_verify_l089_results.json labs/_scale_l089_results.json labs/_audit_l089_results.json labs/_execution_l089_results.json labs/_delivery_l089_results.json labs/_clean_environment_l089_results.json public/labs/
+cp labs/_run_l089.py labs/_teaching_l089.py labs/_verify_l089.py labs/_audit_l089.py labs/_scale_check_l089.py labs/_figures_l089.py labs/_build_l089.py labs/_execute_l089.py labs/_delivery_l089.py public/labs/
+mkdir -p public/labs/solutions public/labs/sources public/labs/results
+cp labs/solutions/0089-sampling-at-scale.ipynb public/labs/solutions/
+cp -r labs/sources/l089 public/labs/sources/
+cp -r labs/results/l089 public/labs/results/
+cp labs/l088-reproduction.md labs/requirements-l088-runtime.txt labs/requirements-l088-lock.txt labs/_sources_l088.json labs/_paper_l088_results.json labs/_teaching_l088_results.json labs/_verify_l088_results.json labs/_audit_l088_results.json labs/_resume_l088_results.json labs/_execution_l088_results.json labs/_delivery_l088_results.json labs/_clean_environment_l088_results.json public/labs/
+cp labs/_run_l088.py labs/_summarize_l088.py labs/_teaching_l088.py labs/_verify_l088.py labs/_audit_l088.py labs/_figures_l088.py labs/_build_l088.py labs/_execute_l088.py labs/_delivery_l088.py labs/_clean_environment_l088.py public/labs/
+mkdir -p public/labs/solutions public/labs/data public/labs/sources public/labs/results
+cp labs/solutions/0088-graph-classification.ipynb public/labs/solutions/
+cp -r labs/data/l088 public/labs/data/
+cp -r labs/sources/l088 public/labs/sources/
+cp -r labs/results/l088 public/labs/results/
+cp labs/l087-reproduction.md labs/requirements-l087-runtime.txt labs/requirements-l087-lock.txt labs/_sources_l087.json labs/_targets_l087.json labs/_paper_l087_results.json labs/_teaching_l087_results.json labs/_verify_l087_results.json labs/_audit_l087_results.json labs/_execution_l087_results.json labs/_delivery_l087_results.json labs/_clean_environment_l087_results.json public/labs/
+cp labs/_run_l087.py labs/_verify_l087.py labs/_audit_l087.py labs/_figures_l087.py labs/_build_l087.py labs/_execute_l087.py labs/_delivery_l087.py labs/_original_l087.m labs/_clean_environment_l087.py public/labs/
+mkdir -p public/labs/solutions public/labs/results
+cp labs/solutions/0087-link-prediction.ipynb public/labs/solutions/
+cp -r labs/results/l087 public/labs/results/
+cp labs/l086-reproduction.md labs/requirements-l086-runtime.txt labs/requirements-l086-observed.txt labs/_sources_l086.json labs/_paper_l086_results.json labs/_verify_l086_results.json labs/_execution_l086_results.json labs/_delivery_l086_results.json labs/_clean_environment_l086_results.json public/labs/
+cp labs/_audit_l086.py labs/_audit_l086_results.json labs/_clean_environment_l086.py labs/_run_l086.py labs/_verify_l086.py labs/_build_l086.py labs/_execute_l086.py labs/_delivery_l086.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0086-pyg-fundamentals.ipynb public/labs/solutions/
+cp labs/l085-reproduction.md labs/requirements-l085-runtime.txt labs/requirements-l085-observed.txt labs/_sources_l085.json labs/_sources_l085-executed.json labs/_clean_environment_l085_results.json labs/_paper_l085_results.json labs/_depth_l085_results.json labs/_verify_l085_results.json labs/_execution_l085_results.json labs/_delivery_l085_results.json public/labs/
+cp labs/_clean_environment_l085.py labs/_delivery_l085.py labs/_run_l085.py labs/_verify_l085.py labs/_figures_l085.py labs/_build_l085.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0085-over-smoothing.ipynb public/labs/solutions/
+cp labs/l084-reproduction.md labs/requirements-l084-observed.txt labs/requirements-l084-runtime.txt labs/_clean_environment_l084.py labs/_clean_environment_l084_results.json labs/_sources_l084.json labs/_paper_l084_results.json labs/_attention_l084.json labs/_verify_l084_results.json labs/_execution_l084_results.json labs/_browser_l084_results.json public/labs/
+cp labs/_run_l084.py labs/_verify_l084.py labs/_sources_l084.py labs/_data_identity_l084_results.json labs/_check_fresh_cli_l084.py labs/_fresh_cli_l084_results.json public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0084-gat.ipynb public/labs/solutions/
+cp labs/l083-reproduction.md labs/requirements-l083-observed.txt labs/_sources_l083.json labs/_paper_l083_results.json labs/_verify_l083_results.json labs/_execution_l083_results.json labs/_browser_l083_results.json public/labs/
+cp labs/_run_l083.py labs/_verify_l083.py public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0083-graphsage.ipynb public/labs/solutions/
+cp labs/l082-reproduction.md labs/requirements-l082-observed.txt labs/_sources_l082.json labs/_paper_l082_results.json labs/_verify_l082_results.json labs/_execution_l082_results.json labs/_browser_l082_results.json public/labs/
+cp labs/_run_l082.py labs/_verify_l082.py labs/_isolation_l082.py labs/_isolation_l082_results.json public/labs/
+mkdir -p public/labs/solutions
+cp labs/solutions/0082-gcn.ipynb public/labs/solutions/
+cp labs/solutions/0081-mpnn-framework.ipynb public/labs/solutions/
+cp labs/l081-reproduction.md labs/requirements-l081-observed.txt labs/_sources_l081.json labs/_verify_l081_results.json labs/_execution_l081_results.json labs/_browser_l081_results.json labs/_check_l081_evidence_results.json public/labs/
+cp labs/_run_l081.py labs/_verify_l081.py public/labs/
+mkdir -p public/labs/sources public/labs/evidence
+cp -r labs/sources/l081 public/labs/sources/
+cp -r labs/evidence/l081 public/labs/evidence/
+cp labs/_sources_l080.json labs/_verify_l080_results.json labs/_check_l080_results.json labs/_execution_l080_results.json labs/_browser_l080_results.json labs/l080-reproduction.md labs/l080-submission.md labs/requirements-l080-observed.txt public/labs/
+cp labs/_verify_l080.py labs/_check_l080.py labs/_prepare_l080.py labs/_fetch_l055.py public/labs/
+mkdir -p public/labs/data
+cp -r labs/data/l080 public/labs/data/
+cp labs/_sources_l079.json labs/_verify_l079_results.json labs/_execution_l079_results.json labs/_browser_l079_results.json labs/l079-reproduction.md labs/l079-decision-template.md labs/requirements-l079-observed.txt public/labs/
+cp labs/_verify_l079.py labs/_check_l079.py public/labs/
+mkdir -p public/labs/data public/solutions
+cp -r labs/data/l079 public/labs/data/
+cp solutions/l079-example-guide.md public/solutions/
+cp labs/_verify_l078_results.json labs/_execution_l078_results.json labs/_browser_l078_results.json labs/_sources_l078.json labs/_paper_l078_results.json labs/l078-reproduction.md labs/requirements-l078-observed.txt public/labs/
+cp labs/_run_l078.py labs/_verify_l078.py public/labs/
+mkdir -p public/labs/data public/modal
+cp -r labs/data/l078 public/labs/data/
+cp modal/l078_paper_repro.py public/modal/
+cp labs/_verify_l077_results.json labs/_execution_l077_results.json labs/_browser_l077_results.json labs/_sources_l077.json labs/l077-reproduction.md public/labs/
+cp labs/_verify_l077.py public/labs/
+cp labs/_verify_l076_results.json labs/_execution_l076_results.json labs/_browser_l076_results.json labs/_sources_l076.json labs/_replay_l076_preflight.json labs/l076-reproduction.md public/labs/
+cp labs/_replay_l076.py labs/requirements-l076-replay.txt public/labs/
+cp labs/_verify_l075_results.json labs/_sources_l075.json labs/l075-reproduction.md labs/_execution_l075_results.json labs/_browser_l075_results.json public/labs/
+cp labs/_verify_l075.py labs/_check_l075.py labs/_prepare_l075.py labs/requirements-l075-audit.txt public/labs/
+cp labs/_numeric_l074_results.json labs/_verify_l074_results.json labs/_sources_l074.json labs/l074-reproduction.md labs/_check_l074_results.json labs/_execution_l074_results.json labs/_browser_l074_results.json public/labs/
+cp labs/_verify_l074.py labs/_run_l074.py labs/_check_l074.py labs/_prepare_l074.py public/labs/
+mkdir -p public/labs/data
+cp -r labs/data/l074 public/labs/data/
+cp labs/_verify_l073_results.json labs/_sources_l073.json labs/l073-reproduction.md labs/_verify_l073.py labs/_check_l073.py public/labs/
+cp labs/_verify_l072_results.json labs/_sources_l072.json labs/_execution_l072_results.json labs/_browser_l072_results.json public/labs/
+cp labs/l072-reproduction.md labs/_run_l072.py labs/_check_l072.py labs/_source_check_l072.py public/labs/
+mkdir -p public/modal
+cp modal/l072_paper_repro.py public/modal/
+cp labs/_verify_l071_results.json labs/_sources_l071.json labs/_execution_l071_results.json labs/_delivery_l071_results.json labs/_browser_l071_results.json labs/_smoke_l071_results.json labs/_mnist_access_l071_results.json labs/_loader_fix_l071_results.json public/labs/
+cp labs/l071-reproduction.md labs/_run_l071.py labs/_check_l071.py labs/_source_check_l071.py public/labs/
+mkdir -p public/modal
+cp modal/l071_paper_repro.py public/modal/
+cp labs/_sources_l047.json labs/_check_l047_results.json labs/_verify_l047_results.json public/labs/
+cp labs/_sources_l048.json labs/_check_l048_results.json labs/_verify_l048_results.json public/labs/
+cp labs/_scaleup_l048_results.json labs/_scaleup_l048_manifest.json public/labs/
+cp labs/_verify_l049_results.json labs/_reference_l049_results.json public/labs/
+cp labs/_check_trompt_l049_results.json labs/_reference_trompt_l049_results.json labs/_verify_trompt_l049_results.json public/labs/
+cp labs/_paper_repro_l049_closer_summary.json public/labs/
+cp labs/l049-reproduction.md public/labs/
+mkdir -p public/modal
+cp modal/l049_paper_repro.py public/modal/
+cp labs/_verify_l050_results.json labs/l050-reproduction.md public/labs/
+if [ -f labs/_paper_repro_l050_closer_summary.json ]; then cp labs/_paper_repro_l050_closer_summary.json public/labs/; fi
+cp modal/l050_paper_repro.py public/modal/
+cp labs/_scaleup_l050_evidence.json labs/_paper_repro_l050_measured.py public/labs/
+cp labs/_verify_l051_results.json labs/_reference_l051_results.json labs/l051-reproduction.md public/labs/
+cp labs/_diagnostic_l051_results.json labs/_diagnose_l051.py public/labs/
+cp labs/_sources_l051.json labs/_data_l051.json public/labs/
+cp labs/_paper_repro_l051_closer_summary.json public/labs/
+cp modal/l051_paper_repro.py public/modal/
+cp labs/_verify_l052_results.json labs/_source_check_l052_results.json labs/l052-reproduction.md public/labs/
+cp labs/_sources_l052.json labs/_data_l052.json public/labs/
+if [ -f labs/_paper_repro_l052_closer_summary.json ]; then cp labs/_paper_repro_l052_closer_summary.json public/labs/; fi
+cp modal/l052_paper_repro.py public/modal/
+cp labs/_verify_l053_results.json labs/_source_check_l053_results.json labs/_sources_l053.json public/labs/
+cp labs/l053-reproduction.md labs/_paper_repro_l053_closer_summary.json public/labs/
+cp labs/_paper_repro_l053_measured.py public/labs/
+cp labs/_ablation_l053.py labs/_ablation_l053_results.json public/labs/
+cp modal/l053_paper_repro.py public/modal/
+cp labs/_verify_l054_results.json labs/_verify_l054_v2_results.json public/labs/
+cp labs/_source_check_l054_results.json labs/_provenance_l054_v2.json public/labs/
+cp labs/_teacher_l054_v2_results.json labs/_check_l054_v2_evidence_results.json labs/_check_repro_l054_results.json public/labs/
+cp labs/l054-reproduction.md labs/_paper_repro_l054.py public/labs/
+cp modal/l054_paper_repro.py public/modal/
+cp labs/_verify_l055_results.json labs/_sources_l055.json labs/_data_l055.json public/labs/
+cp labs/_verify_l055_v2_results.json labs/_paper_l055_results.json public/labs/
+cp labs/_paper_reports_l055.py labs/_check_paper_reports_l055_results.json public/labs/
+cp labs/_release_check_l055_results.json public/labs/
+cp labs/_release_report_alignment_l055_results.json public/labs/
+cp labs/l055-reproduction.md public/labs/
+cp modal/l055_paper_repro.py public/modal/
+cp labs/_verify_l056_results.json labs/_sources_l056.json labs/l056-reproduction.md public/labs/
+cp labs/_verify_l056_elo_results.json public/labs/
+cp labs/_verify_l057_results.json labs/_sources_l057.json labs/_data_l057.json public/labs/
+cp labs/_source_check_l057_results.json labs/l057-reproduction.md public/labs/
+cp labs/_verify_l057_v2_results.json labs/_data_l057_v2.json labs/_source_check_l057_v2_results.json public/labs/
+cp modal/l057_paper_repro.py public/modal/
+for N in $(seq 58 70); do
+  PAD=$(printf '%03d' "$N")
+  cp "labs/_verify_l${PAD}_results.json" "labs/l${PAD}-reproduction.md" public/labs/
+done
+cp labs/_sources_foundation.json labs/_sources_l058.json public/labs/
+cp labs/_sources_l058_audit.json labs/_source_check_l058_v2_results.json labs/_verify_l058_v2_results.json labs/_verify_l058_closer_results.json labs/_execution_l058_results.json public/labs/
+cp labs/_sources_l059_v2.json labs/_source_check_l059_v2_results.json labs/_check_l059_v2_results.json labs/_verify_l059_v2_results.json labs/_verify_l059_closer_results.json labs/_execution_l059_results.json public/labs/
+cp labs/_verify_l060_v2_results.json labs/_analysis_l060_v2_results.json labs/_sources_l060_v2.json labs/_execution_l060_v2_results.json labs/_check_l060_v2_results.json public/labs/
+cp labs/_verify_l061_v2_results.json labs/_analysis_l061_v2_results.json labs/_check_l061_v2_results.json labs/_sources_l061_v2.json public/labs/
+cp labs/_analysis_l061_v2.py labs/_verify_l061.py labs/_verify_l061_v2.py labs/_check_l061_v2.py labs/_fetch_l061_v2.py public/labs/
+cp labs/_execution_l061_v2_results.json public/labs/
+cp modal/l061_paper_repro.py public/modal/
+cp labs/_verify_l062_v2_results.json labs/_check_l062_v2_results.json labs/_sources_l062_v2.json labs/_execution_l062_v2_results.json public/labs/
+cp labs/_verify_l062_v2.py labs/_check_l062_v2.py labs/_query_fallback_l062.py labs/_query_fallback_l062_results.json public/labs/
+cp labs/_verify_l063_v2_results.json labs/_check_l063_v2_results.json labs/_sources_l063_v2.json labs/_execution_l063_v2_results.json public/labs/
+cp labs/_verify_l063_v2.py labs/_check_l063_v2.py labs/_independent_l063.py public/labs/
+cp labs/_verify_l064_v2_results.json labs/_check_l064_v2_results.json labs/_sources_l064_v2.json labs/_execution_l064_v2_results.json public/labs/
+cp labs/_verify_l064_v2.py labs/_check_l064_v2.py labs/_reference_l064_v2.py labs/_independent_l064.py labs/_evidence_l064.py public/labs/
+cp labs/_query_coupling_l064.py labs/_query_coupling_l064_results.json public/labs/
+cp labs/_verify_l065_v2_results.json labs/_check_l065_v2_results.json labs/_sources_l065_v2.json labs/_execution_l065_v2_results.json public/labs/
+cp labs/_verify_l065_v2.py labs/_check_l065_v2.py labs/_reference_l065_v2.py labs/_independent_l065.py public/labs/
+cp labs/_paper_audit_l065.py labs/_paper_l065_v2_results.json labs/_token_identity_l065.py labs/_token_identity_l065_results.json public/labs/
+cp labs/_identity_l065_v2.py labs/_identity_l065_v2_results.json public/labs/
+cp labs/_verify_l066_v2_results.json labs/_check_l066_v2_results.json labs/_sources_l066_v2.json labs/_execution_l066_v2_results.json labs/_analysis_l066_v2_results.json public/labs/
+cp labs/_verify_l066_v2.py labs/_check_l066_v2.py labs/_reference_l066_v2.py labs/_prepare_l066_reference.py labs/_analyze_l066_v2.py public/labs/
+cp labs/_independent_l066.py labs/_evidence_l066.py labs/_symmetry_l066.py labs/_symmetry_l066_results.json public/labs/
+cp labs/_query_coupling_l066.py labs/_query_coupling_l066_results.json public/labs/
+cp labs/_identity_l066_v2.py labs/_identity_l066_v2_results.json public/labs/
+cp labs/_verify_l067_v2.py labs/_verify_l067_v2_results.json labs/_sources_l067_v2.json public/labs/
+cp labs/_check_l067_v2.py labs/_check_l067_v2_results.json labs/_execution_l067_v2_results.json public/labs/
+cp labs/_evidence_l067.py labs/_normalization_l067.py labs/_normalization_l067_results.json public/labs/
+cp labs/_analyze_l067_v2.py labs/_analysis_l067_v2_results.json labs/_identity_l067_v2.py labs/_identity_l067_v2_results.json public/labs/
+cp labs/_paper_audit_l067_v2.py labs/_paper_audit_l067_v2_results.json public/labs/
+cp labs/_verify_l068_v2.py labs/_verify_l068_v2_results.json labs/_sources_l068_v2.py labs/_sources_l068_v2.json public/labs/
+cp labs/_check_l068_v2.py labs/_check_l068_v2_results.json labs/_paper_audit_l068_v2.py labs/_paper_audit_l068_v2_results.json public/labs/
+cp labs/_analyze_l068_v2.py labs/_analysis_l068_v2_results.json labs/_identity_l068_v2.py labs/_identity_l068_v2_results.json public/labs/
+cp labs/_boundary_l068_v2.py labs/_boundary_l068_v2_results.json labs/_execute_l068.py labs/_execution_l068_v2_results.json public/labs/
+cp labs/_independent_l068.py labs/_evidence_l068.py labs/_scm_l068.py labs/_boundary_evidence_l068.py public/labs/
+cp labs/_verify_l068_v2_capped_results.json labs/_verify_l068_v2_rounded_results.json labs/_boundary_l068_v2_rounded_results.json public/labs/
+cp labs/_verify_l069_v2.py labs/_verify_l069_v2_results.json labs/_model_check_l069_v2_results.json public/labs/
+cp labs/_paper_audit_l069_v2.py labs/_source_check_l069_v2_results.json labs/_identity_l069_v2.py labs/_identity_l069_v2_results.json public/labs/
+cp labs/_analyze_l069_v2.py labs/_analysis_l069_v2_results.json labs/_feature_control_l069_v2.py labs/_feature_control_l069_v2_results.json public/labs/
+cp labs/_check_l069_v2.py labs/_check_l069_v2_results.json labs/_execute_l069.py labs/_execution_l069_v2_results.json labs/_delivery_l069_v2_results.json public/labs/
+cp labs/_independent_l069.py labs/_evidence_l069.py labs/_reference_l069.py labs/_cached_evidence_l069.py labs/_feature_evidence_l069.py labs/_statistics_l069.py public/labs/
+mkdir -p public/labs/data
+cp -r labs/data/l070-v2 public/labs/data/
+cp labs/_verify_l070_v2.py labs/_verify_l070_v2_results.json labs/_analyze_l070_v2.py labs/_analysis_l070_v2_results.json public/labs/
+cp labs/_check_l070_v2.py labs/_check_l070_v2_results.json labs/_identity_l070_v2.py labs/_identity_l070_v2_results.json public/labs/
+cp labs/_source_check_l070_v2.py labs/_source_check_l070_v2_results.json labs/_sources_l070_v2.py labs/_sources_l070_v2.json public/labs/
+cp labs/_execute_l070.py labs/_execution_l070_v2_results.json labs/_prepare_l070_v2.py labs/_prepare_l070_v2_results.json public/labs/
+cp labs/_archive_l070.py labs/_evidence_l070.py labs/_statistics_l070.py labs/_teacher_evidence_l070.py public/labs/
+cp labs/_delivery_l070_v2.py labs/_delivery_l070_v2_results.json public/labs/
+cp labs/_execution_foundation_results.json labs/_source_check_foundation_results.json public/labs/
+cp labs/_delivery_foundation_results.json labs/_browser_foundation_results.json labs/_access_foundation_results.json public/labs/
+cp labs/_verify_l070_current_results.json labs/_verify_l070_historical_results.json public/labs/
+cp labs/_assemble_foundation_checkpoint.py public/labs/
+cp -r labs/relkit labs/sources public/labs/
+rm -rf public/labs/sources/l103/original
+cp -r labs/reproductions public/labs/
+cp labs/_paper_reproduction_audit_results.json labs/_paper_appendix_execution_results.json labs/_paper_browser_results.json public/labs/
+cp modal/paper_071_074.py modal/paper_subtab_cpu.py modal/paper_vime_cpu.py public/modal/
+cp labs/_run_foundation.py labs/_run_pretrained_foundation.py labs/_run_current_foundation.py public/labs/
+cp labs/_fetch_foundation.py public/labs/
+cp modal/foundation_repro.py public/modal/
+mkdir -p public/labs/evidence/l185 public/labs/solutions
+cp labs/l185-reproduction.md labs/_*l185*.py labs/_*l185*.json public/labs/
+cp -r labs/evidence/l185/. public/labs/evidence/l185/
+cp labs/solutions/0185-causal-relational-data.ipynb public/labs/solutions/
+cp labs/_depth_revision_results.json labs/_depth_delivery_results.json labs/_depth_browser_results.json public/labs/
+cp labs/_architecture_revision_results.json public/labs/
+mkdir -p public/reviews
+cp reviews/lessons-047-070-depth-and-architecture.md public/reviews/
+cp -r reviews/lessons-136-150 public/reviews/
+cp -r reviews/lessons-151-160 public/reviews/
+cp -r reviews/lessons-161-170 public/reviews/
+cp -r reviews/lessons-171-180 public/reviews/
+cp -r reviews/lessons-181-190 public/reviews/
+cp -r reviews/lessons-191-200 public/reviews/
+cp labs/_relgnn_architecture.py public/labs/
+mkdir -p public/labs/evidence/l155 public/labs/solutions public/modal
+cp labs/l155-reproduction.md labs/_*l155*.json labs/_*l155*.py public/labs/
+cp -r labs/evidence/l155/. public/labs/evidence/l155/
+cp labs/solutions/0155-compare-manual-fe.ipynb public/labs/solutions/
+cp modal/l155_repro.py modal/l155_notebook_check.py public/modal/
+mkdir -p public/labs/evidence/l156
+cp labs/l156-reproduction.md labs/_*l156*.json labs/_*l156*.py public/labs/
+cp -r labs/evidence/l156/. public/labs/evidence/l156/
+cp labs/solutions/0156-temporal-leakage-audit.ipynb public/labs/solutions/
+cp modal/l156_repro.py modal/l156_notebook_check.py public/modal/
+mkdir -p public/labs/evidence/l157 public/labs/releases/l157-f1-audit
+cp labs/l157-reproduction.md labs/_*l157*.json labs/_*l157*.py public/labs/
+cp -r labs/evidence/l157/. public/labs/evidence/l157/
+cp labs/releases/l157-f1-audit.zip public/labs/releases/
+cp labs/releases/l157-f1-audit/*.md labs/releases/l157-f1-audit/*.json public/labs/releases/l157-f1-audit/
+cp labs/solutions/0157-open-source-contribution.ipynb public/labs/solutions/
+cp modal/l157_notebook_check.py public/modal/
+mkdir -p public/labs/evidence/b01 public/labs/figures/b01 public/labs/solutions public/plan
+cp labs/b01-reproduction.md labs/_*b01*.py labs/_*b01*.json public/labs/
+cp labs/relkit/comparison_b01.py public/labs/relkit/
+cp -r labs/evidence/b01/. public/labs/evidence/b01/
+cp -r labs/figures/b01/. public/labs/figures/b01/
+cp labs/solutions/b01-architecture-coverage-honest-comparison.ipynb public/labs/solutions/
+cp plan/year-5-6-bridge.md public/plan/
+mkdir -p public/labs/evidence/b03 public/labs/sources/b03
+cp labs/b03-reproduction.md labs/_*b03*.py labs/_*b03*.json public/labs/
+cp labs/relkit/pfn_b03.py public/labs/relkit/
+cp labs/evidence/b03/*.json labs/evidence/b03/reproducer.zip public/labs/evidence/b03/
+cp labs/sources/b03/*.zip labs/sources/b03/openml-task-*.json labs/sources/b03/github-datasets.txt public/labs/sources/b03/
+cp labs/solutions/b03-pfn-tabpfn-generations.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b02 public/labs/figures/b02 public/modal
+cp labs/b02-reproduction.md labs/_*b02*.py labs/_*b02*.json public/labs/
+cp labs/relkit/embeddings_b02.py public/labs/relkit/
+cp labs/evidence/b02/*.json labs/evidence/b02/replay.zip labs/evidence/b02/source.zip public/labs/evidence/b02/
+cp -r labs/evidence/b02/compact public/labs/evidence/b02/
+cp labs/figures/b02/* public/labs/figures/b02/
+cp labs/solutions/b02-numerical-embeddings-and-ensembles.ipynb public/labs/solutions/
+cp modal/b02_repro.py public/modal/
+mkdir -p public/labs/evidence/b04 public/labs/sources/b04 public/labs/figures/b04
+cp labs/b04-reproduction.md labs/_*b04*.py labs/_*b04*.json public/labs/
+cp labs/relkit/scalable_b04.py public/labs/relkit/
+cp labs/evidence/b04/*.json labs/evidence/b04/reproducer.zip public/labs/evidence/b04/
+cp -r labs/sources/b04/. public/labs/sources/b04/
+cp labs/figures/b04/* public/labs/figures/b04/
+cp labs/solutions/b04-tabicl-scalable-icl.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b04a/runs public/labs/sources/b04a
+cp labs/b04a-reproduction.md labs/_*b04a*.py labs/_*b04a*.json public/labs/
+cp labs/relkit/scaling_b04a.py public/labs/relkit/
+cp labs/evidence/b04a/*.json labs/evidence/b04a/reproducer.zip public/labs/evidence/b04a/
+cp labs/evidence/b04a/runs/*.json public/labs/evidence/b04a/runs/
+cp labs/sources/b04a/*.html labs/sources/b04a/*.txt labs/sources/b04a/*.json labs/sources/b04a/*.py labs/sources/b04a/code.tar.gz public/labs/sources/b04a/
+cp labs/solutions/b04a-scaling-rows-features-classes.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b05 public/labs/sources/b05 public/labs/figures/b05
+cp labs/b05-reproduction.md labs/_*b05*.py labs/_*b05*.json public/labs/
+cp labs/relkit/retrieval_b05.py public/labs/relkit/
+cp labs/evidence/b05/*.json labs/evidence/b05/reproducer.zip public/labs/evidence/b05/
+cp -r labs/sources/b05/. public/labs/sources/b05/
+cp labs/figures/b05/* public/labs/figures/b05/
+cp labs/solutions/b05-tabdpt-real-data-retrieval.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b06 public/labs/sources/b06 public/labs/figures/b06
+cp labs/b06-reproduction.md labs/_*b06*.py labs/_*b06*.json public/labs/
+cp labs/relkit/prior_b06.py public/labs/relkit/
+cp -r labs/evidence/b06/. public/labs/evidence/b06/
+cp -r labs/sources/b06/. public/labs/sources/b06/
+cp labs/figures/b06/* public/labs/figures/b06/
+cp labs/solutions/b06-mitra-prior-mixtures.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b07 public/labs/sources/b07 public/labs/figures/b07 public/labs/data/b07
+cp labs/b07-reproduction.md labs/_*b07*.py labs/_*b07*.json public/labs/
+cp labs/relkit/*b07.py public/labs/relkit/
+cp -r labs/evidence/b07/. public/labs/evidence/b07/
+cp -r labs/sources/b07/. public/labs/sources/b07/
+cp -r labs/data/b07/. public/labs/data/b07/
+cp labs/figures/b07/* public/labs/figures/b07/
+cp labs/solutions/b07-semantic-transfer.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b07a public/labs/sources/b07a public/labs/figures/b07a public/labs/data/b07a
+cp labs/b07a-reproduction.md labs/_*b07a*.py labs/_*b07a*.json public/labs/
+cp labs/relkit/*b07a.py public/labs/relkit/
+cp -r labs/evidence/b07a/. public/labs/evidence/b07a/
+cp -r labs/sources/b07a/. public/labs/sources/b07a/
+cp labs/data/b07a/*.npz public/labs/data/b07a/
+cp labs/figures/b07a/* public/labs/figures/b07a/
+cp labs/solutions/b07a-hypernetworks.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b08 public/labs/sources/b08 public/labs/data/b08 public/labs/solutions
+cp labs/b08-reproduction.md labs/_*b08*.py labs/_*b08*.json public/labs/
+cp labs/relkit/*b08.py public/labs/relkit/
+cp -r labs/evidence/b08/. public/labs/evidence/b08/
+cp -r labs/sources/b08/. public/labs/sources/b08/
+cp labs/data/b08/*.npz public/labs/data/b08/
+cp labs/solutions/b08-structured-objectives.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b09 public/labs/sources/b09 public/labs/data/b09 public/labs/figures/b09
+cp labs/b09-reproduction.md labs/_*b09*.py labs/_*b09*.json public/labs/
+cp labs/relkit/cost_b09.py public/labs/relkit/
+cp -r labs/evidence/b09/. public/labs/evidence/b09/
+cp -r labs/sources/b09/. public/labs/sources/b09/
+cp labs/data/b09/*.npz public/labs/data/b09/
+cp labs/figures/b09/* public/labs/figures/b09/
+cp labs/solutions/b09-cost-frontier.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b10 public/labs/sources/b10 public/labs/figures/b10
+cp labs/b10-reproduction.md labs/_*b10*.py labs/_*b10*.json public/labs/
+cp labs/relkit/rt_b10.py public/labs/relkit/
+cp -r labs/evidence/b10/. public/labs/evidence/b10/
+cp -r labs/sources/b10/. public/labs/sources/b10/
+cp labs/figures/b10/* public/labs/figures/b10/
+cp labs/solutions/b10-relational-transformer.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b11 public/labs/sources/b11 public/labs/figures/b11
+cp labs/b11-reproduction.md labs/_*b11*.py labs/_*b11*.json public/labs/
+cp labs/relkit/baselines_b11.py public/labs/relkit/
+cp -r labs/evidence/b11/. public/labs/evidence/b11/
+cp -r labs/sources/b11/. public/labs/sources/b11/
+cp labs/figures/b11/* public/labs/figures/b11/
+cp labs/solutions/b11-supervised-relational-baselines.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b12 public/labs/sources/b12 public/labs/figures/b12
+cp labs/b12-reproduction.md labs/_*b12*.py labs/_*b12*.json public/labs/
+cp labs/relkit/adaptation_b12.py public/labs/relkit/
+cp -r labs/evidence/b12/. public/labs/evidence/b12/
+cp -r labs/sources/b12/. public/labs/sources/b12/
+cp labs/figures/b12/* public/labs/figures/b12/
+cp labs/solutions/b12-adaptation-mechanisms.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b13 public/labs/sources/b13 public/labs/figures/b13
+cp labs/b13-reproduction.md labs/_*b13*.py labs/_*b13*.json public/labs/
+cp labs/relkit/synthetic_b13.py public/labs/relkit/
+cp -r labs/evidence/b13/. public/labs/evidence/b13/
+cp -r labs/sources/b13/. public/labs/sources/b13/
+cp labs/figures/b13/* public/labs/figures/b13/
+cp labs/solutions/b13-synthetic-relational-data.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b14 public/labs/sources/b14 public/labs/figures/b14
+cp labs/b14-reproduction.md labs/_*b14*.py labs/_*b14*.json public/labs/
+cp labs/relkit/flatten_b14.py public/labs/relkit/
+cp -r labs/evidence/b14/. public/labs/evidence/b14/
+cp -r labs/sources/b14/. public/labs/sources/b14/
+cp labs/figures/b14/* public/labs/figures/b14/
+cp labs/solutions/b14-flattening-challenge.ipynb public/labs/solutions/
+mkdir -p public/modal
+cp modal/b14_tabpfn_rel.py public/modal/
+mkdir -p public/labs/evidence/b15 public/labs/sources/b15 public/labs/relkit public/labs/solutions
+cp labs/b15-reproduction.md labs/_*b15*.py labs/_*b15*.json public/labs/
+cp labs/relkit/labels_b15.py public/labs/relkit/
+cp -r labs/evidence/b15/. public/labs/evidence/b15/
+cp -r labs/sources/b15/. public/labs/sources/b15/
+cp labs/solutions/b15-parameter-free-encoders.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b16 public/labs/sources/b16 public/labs/relkit public/labs/solutions public/labs/figures/b16
+cp labs/b16-reproduction.md labs/_*b16*.py labs/_*b16*.json public/labs/
+cp labs/relkit/partitions_b16.py public/labs/relkit/
+cp -r labs/evidence/b16/. public/labs/evidence/b16/
+cp -r labs/sources/b16/. public/labs/sources/b16/
+cp labs/figures/b16/* public/labs/figures/b16/
+cp labs/solutions/b16-autograble-graph-selection.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b17 public/labs/sources/b17 public/labs/relkit public/labs/solutions
+cp labs/b17-reproduction.md labs/_*b17*.py labs/_*b17*.json public/labs/
+cp labs/relkit/representations_b17.py public/labs/relkit/
+cp -r labs/evidence/b17/. public/labs/evidence/b17/
+cp -r labs/sources/b17/. public/labs/sources/b17/
+cp labs/solutions/b17-reusable-representations.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b18 public/labs/sources/b18 public/labs/relkit public/labs/solutions
+cp labs/b18-reproduction.md labs/_*b18*.py labs/_*b18*.json public/labs/
+cp labs/relkit/context_b18.py public/labs/relkit/
+cp -r labs/evidence/b18/. public/labs/evidence/b18/
+cp -r labs/sources/b18/. public/labs/sources/b18/
+cp labs/solutions/b18-context-sufficiency.ipynb public/labs/solutions/
+mkdir -p public/labs/evidence/b18a public/labs/sources/b18a public/labs/relkit public/labs/solutions public/docs/plans
+cp labs/b18a-reproduction.md labs/_*b18a*.py labs/_*b18a*.json public/labs/
+cp labs/relkit/state_b18a.py public/labs/relkit/
+cp -r labs/evidence/b18a/. public/labs/evidence/b18a/
+cp labs/sources/b18a/*.* public/labs/sources/b18a/
+cp labs/solutions/b18a-context-state.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b18a-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b19a public/labs/sources/b19a public/labs/figures/b19a
+cp labs/b19a-reproduction.md labs/b19a-metric-contract.md labs/_*b19a*.py labs/_*b19a*.json public/labs/
+cp labs/relkit/scoring_b19a.py public/labs/relkit/
+cp -r labs/evidence/b19a/. public/labs/evidence/b19a/
+cp -r labs/sources/b19a/. public/labs/sources/b19a/
+cp labs/figures/b19a/* public/labs/figures/b19a/
+cp labs/solutions/b19a-predictive-distributions.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b19a-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b19 public/labs/sources/b19 public/labs/figures/b19
+cp labs/b19-reproduction.md labs/b19-preregistration.md labs/_*b19*.py labs/_*b19*.json public/labs/
+cp labs/relkit/evidence_b19.py public/labs/relkit/
+cp -r labs/evidence/b19/. public/labs/evidence/b19/
+cp -r labs/sources/b19/. public/labs/sources/b19/
+cp labs/figures/b19/* public/labs/figures/b19/
+cp labs/solutions/b19-benchmark-evidence.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b19-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b19b public/labs/sources/b19b public/labs/figures/b19b
+cp labs/b19b-reproduction.md labs/b19b-task-contract.md labs/_*b19b*.py labs/_*b19b*.json public/labs/
+cp labs/relkit/forecast_b19b.py public/labs/relkit/
+cp -r labs/evidence/b19b/. public/labs/evidence/b19b/
+cp -r labs/sources/b19b/. public/labs/sources/b19b/
+cp labs/figures/b19b/* public/labs/figures/b19b/
+cp labs/solutions/b19b-forecasting-contracts.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b19b-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b20 public/labs/sources/b20 public/labs/figures/b20
+cp labs/b20-reproduction.md labs/_*b20*.py labs/_*b20*.json public/labs/
+cp labs/relkit/curriculum_b20.py public/labs/relkit/
+cp labs/evidence/b20/*.* public/labs/evidence/b20/
+cp labs/sources/b20/*.* public/labs/sources/b20/
+cp labs/figures/b20/* public/labs/figures/b20/
+cp labs/solutions/b20-curriculum-order.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b20-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b21 public/labs/sources/b21 public/labs/figures/b21
+cp labs/b21-reproduction.md labs/_*b21*.py labs/_*b21*.json public/labs/
+cp labs/relkit/structural_b21.py public/labs/relkit/
+cp labs/evidence/b21/*.* public/labs/evidence/b21/
+cp labs/sources/b21/*.* public/labs/sources/b21/
+cp labs/figures/b21/* public/labs/figures/b21/
+cp labs/solutions/b21-structural-robustness.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b21-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b22 public/labs/sources/b22 public/labs/figures/b22
+cp labs/b22-reproduction.md labs/_*b22*.py labs/_*b22*.json public/labs/
+cp labs/relkit/refinement_b22.py public/labs/relkit/
+cp labs/evidence/b22/*.* public/labs/evidence/b22/
+cp labs/sources/b22/*.* public/labs/sources/b22/
+cp labs/figures/b22/* public/labs/figures/b22/
+cp labs/solutions/b22-support-state-refinement.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b22-design.md public/docs/plans/
+mkdir -p public/labs/evidence/b23 public/labs/sources/b23 public/labs/figures/b23 public/modal
+cp labs/b23-reproduction.md labs/_*b23*.py labs/_*b23*.json public/labs/
+cp labs/relkit/comparison_b23.py public/labs/relkit/
+cp -r labs/evidence/b23/. public/labs/evidence/b23/
+cp labs/sources/b23/*.* public/labs/sources/b23/
+cp labs/figures/b23/* public/labs/figures/b23/
+cp labs/solutions/b23-declared-comparison.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b23-design.md public/docs/plans/
+cp modal/b23_repro.py public/modal/
+mkdir -p public/labs/evidence/b24 public/labs/sources/b24 public/labs/figures/b24
+cp labs/b24-*.md labs/_*b24*.py labs/_*b24*.json public/labs/
+cp labs/relkit/defense_b24.py public/labs/relkit/
+cp labs/evidence/b24/*.* public/labs/evidence/b24/
+cp labs/sources/b24/*.* public/labs/sources/b24/
+cp labs/figures/b24/* public/labs/figures/b24/
+cp labs/solutions/b24-architecture-thesis-defense.ipynb public/labs/solutions/
+cp docs/plans/2026-10-04-b24-design.md public/docs/plans/
+'''
+
+
+def workflow_plan(path):
+    workflow = yaml.safe_load(path.read_text(encoding='utf-8'))
+    steps = workflow['jobs']['build']['steps']
+    plans = [step['run'] for step in steps if step.get('name') == 'Build site']
+    if len(plans) != 1:
+        raise ValueError('unsupported workflow: expected one Build site step')
+    return plans[0]
+
+
+def safe_path(value, destination=False):
+    path = PurePosixPath(value)
+    if path.is_absolute() or '..' in path.parts or not path.parts:
+        raise ValueError('unsupported path: ' + value)
+    if destination and (path.parts[0] != 'public' or len(path.parts) < 1):
+        raise ValueError('unsupported destination: ' + value)
+    return path.as_posix()
+
+
+def expand_plan(root, plan):
+    """Return destination-to-source mapping and unmatched input operands."""
+    files, missing = {}, set()
+
+    def operation(line):
+        # Retain only the exact optional-copy suffix used by the workflow.
+        line = re.sub(r' 2>/dev/null \|\| true$', '', line)
+        if any(token in line for token in ('$', '`', ';', '|', '&', '>', '<', '\\')):
+            raise ValueError('unsupported shell: ' + line)
+        # shlex removes quotes; expanding quoted metacharacters afterwards
+        # would invent files Bash never copied. Reject before losing quoting.
+        for quoted in re.finditer(r'''(['"])(.*?)\1''', line):
+            if glob.has_magic(quoted.group(2)):
+                raise ValueError('unsupported quoted wildcard: ' + line)
+        words = shlex.split(line, comments=True)
+        if not words:
+            return
+        command, *args = words
+        if command == 'mkdir' and args and args[0] == '-p':
+            for value in args[1:]:
+                value = safe_path(value, destination=True)
+            return
+        if command == 'rm' and args[:1] == ['-rf']:
+            for value in args[1:]:
+                if glob.has_magic(value):
+                    raise ValueError('unsupported wildcard removal: ' + value)
+                target = safe_path(value, destination=True)
+                if target == 'public':
+                    raise ValueError('unsupported public-root removal: ' + value)
+                prefix = target.removeprefix('public/').rstrip('/')
+                for name in list(files):
+                    if name == prefix or name.startswith(prefix + '/'):
+                        del files[name]
+            return
+        if command != 'cp':
+            raise ValueError('unsupported shell: ' + line)
+        recursive = bool(args and args[0] == '-r')
+        if recursive:
+            args = args[1:]
+        if len(args) < 2 or any(value.startswith('-') for value in args):
+            raise ValueError('unsupported copy: ' + line)
+        dest = safe_path(args[-1], destination=True)
+        # All current copy targets are explicit directories. Reject renames,
+        # rather than silently guessing shell directory-existence semantics.
+        if not args[-1].endswith('/'):
+            raise ValueError('unsupported copy target (directory suffix required): ' + args[-1])
+        destination = PurePosixPath(dest).relative_to('public')
+        for operand in args[:-1]:
+            safe_path(operand)
+            contents = operand.endswith('/.')
+            matches = sorted(glob.glob(str(root / operand)))
+            if not matches:
+                missing.add(operand)
+            for match in matches:
+                source = Path(match)
+                relative = source.relative_to(root)
+                if source.is_dir() and not source.is_symlink():
+                    if not recursive:
+                        raise ValueError('unsupported non-recursive directory: ' + operand)
+                    base = destination if contents else destination / source.name
+                    for current, dirs, names in os.walk(source, followlinks=False):
+                        symlink_dirs = [name for name in dirs if (Path(current) / name).is_symlink()]
+                        for name in names + symlink_dirs:
+                            item = Path(current) / name
+                            target = base / item.relative_to(source)
+                            files[target.as_posix()] = item.relative_to(root).as_posix()
+                else:
+                    target = destination / relative.name
+                    files[target.as_posix()] = relative.as_posix()
+
+    lines = plan.splitlines()
+    index = 0
+    while index < len(lines):
+        line = lines[index].strip()
+        index += 1
+        if not line or line.startswith('#'):
+            continue
+        # These mutate HTML bytes only; the file set remains the same.
+        if line == 'VER=$(python3 -c "import json; print(json.load(open(\'lessons/manifest.json\'))[\'version\'])")':
+            continue
+        if line == 'sed -i "s/name=\\"rdl-manifest-version\\" content=\\"[0-9]*\\"/name=\\"rdl-manifest-version\\" content=\\"$VER\\"/" index.html notebooks.html':
+            continue
+        conditional = re.fullmatch(r'if \[ -f ([^ ]+) \]; then (cp .+); fi', line)
+        if conditional:
+            source, copy = conditional.groups()
+            safe_path(source)
+            if (root / source).is_file():
+                operation(copy)
+            continue
+        if line == 'for N in $(seq 58 70); do':
+            body = []
+            while index < len(lines) and lines[index].strip() != 'done':
+                body.append(lines[index].strip())
+                index += 1
+            if index == len(lines) or len(body) != 2 or body[0] != 'PAD=$(printf \'%03d\' "$N")':
+                raise ValueError('unsupported loop')
+            index += 1
+            for number in range(58, 71):
+                operation(body[1].replace('${PAD}', f'{number:03d}'))
+            continue
+        operation(line)
+    return dict(sorted(files.items())), sorted(missing)
+
+
+def build_report(root, plan=DEFAULT_PLAN):
+    sources, missing = expand_plan(root, plan)
+    references = set()
+    manifest = root / 'lessons/manifest.json'
+    if manifest.is_file():
+        for lesson in json.loads(manifest.read_text(encoding='utf-8')).get('lessons', []):
+            if lesson.get('slug'):
+                references.add('lessons/' + lesson['slug'] + '.html')
+            if lesson.get('labPath'):
+                references.add(lesson['labPath'])
+    absent, omitted = [], []
+    for reference in sorted(references):
+        safe_path(reference)
+        if not (root / reference).is_file():
+            absent.append(reference)
+        elif reference not in sources:
+            omitted.append(reference)
+    return dict(files=list(sources), sources=sources, missing_sources=missing,
+                missing_references=absent, omitted_references=omitted)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument('--workflow', type=Path, help='override the frozen compatibility plan')
+    parser.add_argument('--compare', type=Path, help='workflow to compare destination file sets against')
+    args = parser.parse_args(argv)
+    try:
+        root = args.root.resolve()
+        plan = workflow_plan(args.workflow) if args.workflow else DEFAULT_PLAN
+        report = build_report(root, plan)
+        equal = True
+        if args.compare:
+            other, _ = expand_plan(root, workflow_plan(args.compare))
+            generated, compared = set(report['files']), set(other)
+            equal = generated == compared
+            report['comparison'] = dict(equal=equal, only_generated=sorted(generated - compared),
+                                        only_workflow=sorted(compared - generated))
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0 if equal else 1
+    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as error:
+        print('unsupported publication plan or invalid input: ' + str(error), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())
