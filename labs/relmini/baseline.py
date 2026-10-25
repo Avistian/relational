@@ -17,6 +17,8 @@ CACHE = Path.home() / ".cache" / "relbench" / "rel-f1"
 SEED = 0
 FEATURES = ["f_n_prior", "f_dnf_rate", "f_mean_grid", "f_mean_points", "f_age_years", "f_has_history"]
 
+CONSTRUCTOR_FEATURES = ["f_constructor_n_prior", "f_constructor_mean_points", "f_constructor_has_history"]
+
 
 def load_real(split, cache=CACHE):
     task = pd.read_parquet(cache / "tasks" / "driver-dnf" / f"{split}.parquet")
@@ -96,14 +98,18 @@ def auroc(y, p):
     return float(roc_auc_score(y, p))
 
 
-def fit_predict(train, eval_, results, drivers, seed=SEED):
-    ftr = build_features(train, results, drivers)
-    fev = build_features(eval_, results, drivers)
+def fit_predict(train, eval_, results, drivers, seed=SEED, *, constructor_results=None, use_constructor=False):
+    if use_constructor and constructor_results is None:
+        raise ValueError("constructor results required when constructor features are enabled")
+    source = constructor_results if use_constructor else None
+    ftr = build_features(train, results, drivers, source)
+    fev = build_features(eval_, results, drivers, source)
+    columns = FEATURES + (CONSTRUCTOR_FEATURES if use_constructor else [])
     assert_no_leakage(ftr)
     assert_no_leakage(fev)
     model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000, random_state=seed))
-    model.fit(ftr[FEATURES], train["did_not_finish"].to_numpy())
-    return model.predict_proba(fev[FEATURES])[:, 1]
+    model.fit(ftr[columns], train["did_not_finish"].to_numpy())
+    return model.predict_proba(fev[columns])[:, 1]
 
 
 def run(seed=SEED, cache=CACHE):
