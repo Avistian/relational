@@ -8,6 +8,7 @@ import baseline  # noqa: E402
 
 _C = baseline.CACHE
 _P = {  # sha256 pinned from the lead env profile (config/verify-projects.json, project `relational`)
+    "db/constructor_results.parquet": "35582c2f0634d5503b664babf38264311332e6ca3cb612fb0fe737bfaffdc29e",
     "db/drivers.parquet": "ba3461b83a1a467a856bde4059519140a5a31952ad24a5e944ea9dd5c5faceae",
     "db/races.parquet": "88bb260f03c9ec5c7b030969d7284531d5f8e8592d73174686ad01cdfc8f87ea",
     "db/results.parquet": "b8b0e39b27f318a7bd461f21bb0ba9ef44909ed569d287e0c6b2969c6bd2f598",
