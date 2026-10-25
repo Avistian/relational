@@ -1,5 +1,7 @@
 """The PR workflow must execute the ticket's checks without deployment access."""
 from pathlib import Path
+import re
+import shlex
 import unittest
 
 import yaml
@@ -9,6 +11,27 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class PullRequestChecks(unittest.TestCase):
+    def test_unit_discovery_installs_visual_contract_dependencies(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/pr-checks.yml').read_text())
+        discovery = "python -m unittest discover -s tests -p 'test_*.py'"
+        checked_jobs = 0
+        for job in workflow['jobs'].values():
+            commands = [line for step in job['steps']
+                        for line in step.get('run', '').splitlines()]
+            if discovery not in commands:
+                continue
+            checked_jobs += 1
+            installed = set()
+            for command in commands[:commands.index(discovery)]:
+                argv = shlex.split(command)
+                if argv[:4] == ['python', '-m', 'pip', 'install']:
+                    installed.update(re.split(r'[<>=!~;\[]', arg, maxsplit=1)[0].lower()
+                                     for arg in argv[4:] if not arg.startswith('-'))
+            self.assertIn('beautifulsoup4', installed,
+                          'Unit discovery imports bs4 through both visual contract modules; '
+                          'install beautifulsoup4 before running those tests')
+        self.assertGreater(checked_jobs, 0, 'Expected the unfiltered unit discovery job')
+
     def test_pull_requests_run_all_five_checks_without_deploying(self):
         path = ROOT / '.github/workflows/pr-checks.yml'
         self.assertTrue(path.is_file(), 'PRs need a validation workflow')
