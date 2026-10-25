@@ -13,13 +13,20 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "search_index.py"
-INDEX = ROOT / "assets" / "search-index.json"
+INDEX = ROOT / "assets" / "search-index.js"
 SEARCH_JS = ROOT / "assets" / "search.js"
 PY = sys.executable
 
 
 def load_index():
-    return json.loads(INDEX.read_text(encoding="utf-8"))
+    # Load the public classic-script export independently of the generator.
+    js = "const vm=require('vm'),fs=require('fs'),c={};vm.createContext(c);" + \
+         "vm.runInContext(fs.readFileSync(process.argv[1],'utf8'),c);" + \
+         "process.stdout.write(JSON.stringify(c.LessonSearchIndex));"
+    result = subprocess.run(["node", "-e", js, str(INDEX)], capture_output=True, text=True)
+    if result.returncode:
+        raise AssertionError(result.stderr)
+    return json.loads(result.stdout)
 
 
 def fold(s):
@@ -83,14 +90,14 @@ class Determinism(unittest.TestCase):
 
     def test_regeneration_byte_identical(self):
         before = INDEX.read_bytes()
-        out = Path(tempfile.mkdtemp()) / "regen.json"
+        out = Path(tempfile.mkdtemp()) / "regen.js"
         for _ in range(2):
             r = subprocess.run([PY, str(SCRIPT), "--out", str(out)], cwd=ROOT, capture_output=True, text=True)
             self.assertEqual(r.returncode, 0, r.stderr)
             self.assertEqual(out.read_bytes(), before)
 
     def test_check_fails_when_stale(self):
-        stale = Path(tempfile.mkdtemp()) / "stale.json"
+        stale = Path(tempfile.mkdtemp()) / "stale.js"
         stale.write_text("[]\n", encoding="utf-8")
         r = subprocess.run([PY, str(SCRIPT), "--check", "--out", str(stale)], cwd=ROOT, capture_output=True, text=True)
         self.assertNotEqual(r.returncode, 0)
@@ -158,21 +165,38 @@ class IndexHtmlWiring(unittest.TestCase):
             self.assertIn(keep, text)
         self.assertEqual(text.count('id="lesson-search"'), 1)
 
-    def test_index_embedded_so_file_scheme_works(self):
+    def test_external_classic_script_loads_before_search(self):
         text = (ROOT / "index.html").read_text(encoding="utf-8")
-        m = re.search(r'<script type="application/json" id="lesson-search-data">(.*?)</script>', text, re.S)
-        self.assertIsNotNone(m)
-        self.assertEqual(json.loads(m.group(1)), load_index())
+        self.assertLess(text.index('src="assets/search-index.js"'), text.index('src="assets/search.js"'))
+        self.assertNotIn('id="lesson-search-data"', text)
         self.assertNotIn("fetch(", text)
 
-    def test_check_fails_when_embedded_copy_stale(self):
-        tmp = Path(tempfile.mkdtemp())
-        page = tmp / "index.html"
-        page.write_text((ROOT / "index.html").read_text(encoding="utf-8").replace(
-            "Worked example", "Worked exampleX", 1), encoding="utf-8")
-        r = subprocess.run([PY, str(SCRIPT), "--check", "--html", str(page)], cwd=ROOT,
-                           capture_output=True, text=True)
-        self.assertNotEqual(r.returncode, 0)
+    def test_check_fails_when_script_wiring_stale(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            page = Path(tmp) / "index.html"
+            page.write_text((ROOT / "index.html").read_text(encoding="utf-8").replace(
+                'src="assets/search-index.js"', 'src="assets/missing.js"'), encoding="utf-8")
+            r = subprocess.run([PY, str(SCRIPT), "--check", "--html", str(page)], cwd=ROOT,
+                               capture_output=True, text=True)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("STALE: search script wiring", r.stderr)
+
+    def test_check_fails_when_generated_asset_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = Path(tmp) / "missing.js"
+            r = subprocess.run([PY, str(SCRIPT), "--check", "--out", str(missing)],
+                               cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1)
+            self.assertIn("STALE:", r.stderr)
+            self.assertFalse(missing.exists())
+
+    def test_legacy_json_export_matches_script_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "index.json"
+            r = subprocess.run([PY, str(SCRIPT), "--out", str(out)],
+                               cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(json.loads(out.read_text()), load_index())
 
 
 if __name__ == "__main__":
