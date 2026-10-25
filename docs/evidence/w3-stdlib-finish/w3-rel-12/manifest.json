@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "kind": "non-ui",
+  "source_sha": "0654c6a3ef5cab3c229a9beebaeefd6a0cca6a1f",
+  "reviewer": "verifier:rb2-vrel12",
+  "raw": [
+    {
+      "phase": "red",
+      "path": "red.log",
+      "sha256": "1083231db197cc8ca291a2d7d36ebef82e8eafda7bad25229fc2dec09cddabba",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-B",
+        "-c",
+        "\nimport importlib.util,json,pathlib,sys,unittest\nroot=pathlib.Path.cwd(); suite=unittest.TestSuite(); ids=json.loads(sys.argv[1])\nfor entry in ids:\n    file, identity=entry.split('::',1)\n    spec=importlib.util.spec_from_file_location('lead_replay_'+str(len(suite._tests)),root/file)\n    module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n    target=module\n    for name in identity.split('.'): target=getattr(target,name)\n    cls=getattr(module,identity.split('.')[0]); suite.addTest(cls(identity.split('.')[-1]))\nresult=unittest.TextTestRunner(verbosity=2).run(suite)\nprint('LEAD_RESULT='+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+        "[\"tests/progress/test_progress_check.py::ProgressCheck.test_check_validates_both_outputs_without_writing\"]"
+      ],
+      "key_lines": [
+        "LEAD_RESULT={\"run\": 1, \"failed\": 18, \"errors\": 0, \"skipped\": 0}",
+        "FAILED (failures=18)"
+      ]
+    },
+    {
+      "phase": "green",
+      "path": "green.log",
+      "sha256": "8181dc00d7d52bd15f0e8310edbf740aaf033cc1a0c8e8af8421d5680023451b",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-B",
+        "-c",
+        "\nimport importlib.util,json,pathlib,sys,unittest\nroot=pathlib.Path.cwd(); suite=unittest.TestSuite(); ids=json.loads(sys.argv[1])\nfor entry in ids:\n    file, identity=entry.split('::',1)\n    spec=importlib.util.spec_from_file_location('lead_replay_'+str(len(suite._tests)),root/file)\n    module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)\n    target=module\n    for name in identity.split('.'): target=getattr(target,name)\n    cls=getattr(module,identity.split('.')[0]); suite.addTest(cls(identity.split('.')[-1]))\nresult=unittest.TextTestRunner(verbosity=2).run(suite)\nprint('LEAD_RESULT='+json.dumps(dict(run=result.testsRun,failed=len(result.failures),errors=len(result.errors),skipped=len(result.skipped))))\nsys.exit(0 if result.wasSuccessful() else 1)\n",
+        "[\"tests/progress/test_progress_check.py::ProgressCheck.test_check_validates_both_outputs_without_writing\"]"
+      ],
+      "key_lines": [
+        "LEAD_RESULT={\"run\": 1, \"failed\": 0, \"errors\": 0, \"skipped\": 0}",
+        "OK"
+      ]
+    },
+    {
+      "phase": "verification",
+      "path": "verification.log",
+      "sha256": "e1da7cca9e1e6f205e08883cc164e1f625e837561df47756a554462ef41fba43",
+      "command": [
+        "/home/avist/Projects/relational/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_*.py"
+      ],
+      "key_lines": [
+        "  \"errors\": [],"
+      ]
+    }
+  ]
+}

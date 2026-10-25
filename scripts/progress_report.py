@@ -172,11 +172,28 @@ def main(argv=None):
     ap.add_argument("--root", default=str(ROOT))
     ap.add_argument("--json-out")
     ap.add_argument("--html-out")
+    ap.add_argument("--check", action="store_true",
+                    help="check both generated outputs without writing (nonzero if missing or stale)")
     a = ap.parse_args(argv)
     root = Path(a.root)
     rep = build_report(root, a.today)
-    Path(a.json_out or root / "assets" / "progress-data.json").write_text(dumps(rep), encoding="utf-8")
-    Path(a.html_out or root / "progress.html").write_text(render_html(rep), encoding="utf-8")
+    outputs = [(Path(a.json_out or root / "assets" / "progress-data.json"), dumps(rep)),
+               (Path(a.html_out or root / "progress.html"), render_html(rep))]
+    if a.check:
+        stale = False
+        for path, expected in outputs:
+            try:
+                current = path.read_bytes()
+            except OSError as exc:
+                print(f"Missing or unreadable progress output: {path}: {exc}", file=sys.stderr)
+                stale = True
+                continue
+            if current != expected.encode("utf-8"):
+                print(f"Stale progress output for {a.today}: {path}", file=sys.stderr)
+                stale = True
+        return 1 if stale else 0
+    for path, content in outputs:
+        path.write_text(content, encoding="utf-8")
     return 0
 
 
