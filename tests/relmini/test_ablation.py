@@ -48,3 +48,27 @@ class ConstructorGuard(unittest.TestCase):
                 with self.subTest(column=column, delta=delta):
                     with self.assertRaisesRegex(AssertionError, 'leakage'):
                         baseline.assert_no_leakage(f)
+
+
+class PairedAblation(unittest.TestCase):
+    def test_same_model_without_constructor_features_reproduces_baseline(self):
+        import numpy as np
+        from tests.relmini.test_relmini import synthetic
+        drivers, results, task = synthetic(n_drivers=12, n_races=20)
+        results['constructorId'] = results.driverId % 3
+        constructors = results.groupby(['constructorId', 'date'], as_index=False).agg(points=('points', 'sum'))
+        train, ev = task[task.date < '2000-07-01'], task[task.date >= '2000-07-01']
+        original = baseline.fit_predict(train, ev, results, drivers, seed=0)
+        without = baseline.fit_predict(train, ev, results, drivers, seed=0,
+                                       constructor_results=constructors, use_constructor=False)
+        with_team = baseline.fit_predict(train, ev, results, drivers, seed=0,
+                                         constructor_results=constructors, use_constructor=True)
+        again = baseline.fit_predict(train, ev, results, drivers, seed=0,
+                                     constructor_results=constructors, use_constructor=True)
+        np.testing.assert_array_equal(original, without)
+        np.testing.assert_array_equal(with_team, again)
+        self.assertEqual(len(with_team), len(ev))
+        self.assertTrue(np.isfinite(with_team).all())
+        self.assertFalse(np.array_equal(with_team, without))
+        with self.assertRaisesRegex(ValueError, 'constructor'):
+            baseline.fit_predict(train, ev, results, drivers, use_constructor=True)
