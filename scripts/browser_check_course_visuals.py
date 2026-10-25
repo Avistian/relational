@@ -7,8 +7,8 @@ from refresh_lesson_visuals import ROOT,selected,key_for
 from course_visual_specs import SPECS
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--base-url');ap.add_argument('--export',action='store_true');ap.add_argument('--quick',action='store_true');ap.add_argument('--start',type=int,default=0);ap.add_argument('--stop',type=int,default=228);args=ap.parse_args()
- out=ROOT/'reviews/course-visual-quality-2026-10-07'/('live' if args.base_url else 'after');out.mkdir(parents=True,exist_ok=True)
+ ap=argparse.ArgumentParser();ap.add_argument('--base-url');ap.add_argument('--export',action='store_true');ap.add_argument('--quick',action='store_true');ap.add_argument('--start',type=int,default=0);ap.add_argument('--stop',type=int,default=228);ap.add_argument('--report-dir',type=Path,default=ROOT/'reviews/course-visual-quality-2026-10-07');ap.add_argument('--out',type=Path,help='Directory for review/report outputs');args=ap.parse_args()
+ out=args.out if args.out is not None else args.report_dir/('live' if args.base_url else 'after');out.mkdir(parents=True,exist_ok=True)
  class Quiet(SimpleHTTPRequestHandler):
   def log_message(self,*a):pass
  server=None
