@@ -105,3 +105,18 @@ class AmbiguousTeams(unittest.TestCase):
         # Reversing tied source rows must not choose a different team.
         alt = baseline.build_features(task, results.iloc[::-1], drivers, constructors)
         pd.testing.assert_frame_equal(f, alt)
+
+
+class EvidencePreservation(unittest.TestCase):
+    def test_existing_evidence_is_never_overwritten_by_another_run(self):
+        import tempfile
+        import ablation
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            output = root / 'out'
+            output.mkdir()
+            receipt = output / 'receipt.json'
+            receipt.write_text('historic evidence\n')
+            with self.assertRaises(FileExistsError):
+                ablation.run(cache=root / 'missing', output=output, smoke=True)
+            self.assertEqual(receipt.read_text(), 'historic evidence\n')
