@@ -87,3 +87,21 @@ class AblationReceipt(unittest.TestCase):
             self.assertEqual(receipt['status'], 'NOT_RUN')
             self.assertNotIn('metrics', receipt)
             self.assertFalse((root / 'out' / 'predictions.csv').exists())
+
+
+class AmbiguousTeams(unittest.TestCase):
+    def test_conflicting_latest_team_is_unknown_not_an_arbitrary_choice(self):
+        drivers = pd.DataFrame({'driverId': [1], 'dob': pd.to_datetime(['1970-01-01'])})
+        task = pd.DataFrame({'driverId': [1], 'date': pd.to_datetime(['2000-01-03'])})
+        results = pd.DataFrame({'driverId': [1, 1, 1], 'constructorId': [10, 10, 20],
+                                'date': pd.to_datetime(['2000-01-01', '2000-01-02', '2000-01-02']),
+                                'grid': [1., 1., 1.], 'position': [1., 1., 1.], 'points': [1., 1., 1.]})
+        constructors = pd.DataFrame({'constructorId': [10, 20],
+                                    'date': pd.to_datetime(['2000-01-01'] * 2), 'points': [7., 11.]})
+        f = baseline.build_features(task, results, drivers, constructors)
+        self.assertEqual(f.f_constructor_has_history.iloc[0], 0.)
+        self.assertEqual(f.f_constructor_n_prior.iloc[0], 0.)
+        self.assertTrue(pd.isna(f.constructor_cutoff.iloc[0]))
+        # Reversing tied source rows must not choose a different team.
+        alt = baseline.build_features(task, results.iloc[::-1], drivers, constructors)
+        pd.testing.assert_frame_equal(f, alt)
