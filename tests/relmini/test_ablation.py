@@ -72,3 +72,18 @@ class PairedAblation(unittest.TestCase):
         self.assertFalse(np.array_equal(with_team, without))
         with self.assertRaisesRegex(ValueError, 'constructor'):
             baseline.fit_predict(train, ev, results, drivers, use_constructor=True)
+
+
+class AblationReceipt(unittest.TestCase):
+    def test_missing_cache_records_not_run_without_results(self):
+        import json
+        import tempfile
+        import ablation
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rc = ablation.run(cache=root / 'missing', output=root / 'out', smoke=True)
+            self.assertNotEqual(rc, 0)
+            receipt = json.loads((root / 'out' / 'receipt.json').read_text())
+            self.assertEqual(receipt['status'], 'NOT_RUN')
+            self.assertNotIn('metrics', receipt)
+            self.assertFalse((root / 'out' / 'predictions.csv').exists())
