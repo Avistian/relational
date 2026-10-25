@@ -62,8 +62,12 @@ def build_features(task, results, drivers, constructor_results=None):
         # Resolve the driver's team from strictly prior results, never the label-day team.
         teams = results[["driverId", "constructorId", "date"]].copy()
         teams["driverId"] = teams["driverId"].astype("int64")
-        if teams.duplicated(["driverId", "date"]).any():
-            raise ValueError("ambiguous driver constructor at the same timestamp")
+        # Historic shared drives can give several teams on one date. Do not pick
+        # one by file order or fall back to an older known team: mark it unknown.
+        teams = teams.groupby(["driverId", "date"], as_index=False).agg(
+            constructorId=("constructorId", "min"), team_count=("constructorId", "nunique"))
+        teams.loc[teams["team_count"] != 1, "constructorId"] = -1
+        teams = teams.drop(columns="team_count")
         teams = teams.rename(columns={"date": "constructor_assignment_cutoff"})
         m = pd.merge_asof(m.sort_values("date"), teams.sort_values("constructor_assignment_cutoff"),
                           left_on="date", right_on="constructor_assignment_cutoff", by="driverId",
