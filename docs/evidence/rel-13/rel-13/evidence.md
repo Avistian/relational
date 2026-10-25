@@ -1,3 +1,32 @@
+# REL13 fresh independent capture review
+
+Recommendation: **ACCEPT with RISK_FLAG: YES**, for Piotr's review; engine acceptance and task DONE remain pending. No introduced source defect found.
+
+Reviewed source: `a73f818d3d6ba4e3e07a749c455db898b4f0da33`. Builder: `builder:rel-13` (`w1:p5T`). Actual independent reviewer: `verifier:rel-13`, fresh spawn `v-rel13-captured-20261025`, pane `w1:p5W`. The earlier verifier pane `w1:p5V` is historical. Capture actor: `lead:rel-13-capture`, explicitly authorized by Piotr to capture outside the sandbox. This reviewer inspected the images with the image viewer and did not take them or run a browser.
+
+The final evidence-only delivery SHA and its fresh clean configured verification are recorded in the external [fresh verifier report](/home/avist/agent-stack/lead/.lead/tasks/rel-13/evidence/fresh-verifier/accept/REPORT.md) and READY.json. This avoids a self-referential commit SHA. Only this evidence directory changes from the reviewed source.
+
+## Four retained actual images
+
+- [Index desktop, 1280 x 900](desktop.png): Course progress is clearly visible under Reference.
+- [Index mobile, 390 x 900](mobile.png): Course progress is visible and readable near the bottom; no horizontal clipping at this viewport.
+- [Progress desktop, 1280 x 900](progress-desktop.png): rendered totals (37 done, 191 pending, 31 flashcards due) and table are readable.
+- [Progress mobile, 390 x 900](progress-mobile.png): totals, explanatory text and table wrap within the viewport; continued rows require ordinary vertical scrolling.
+
+All four PNG IHDR dimensions and SHA256 hashes were independently checked against both [capture result](evidence/capture-result.json) and original [index manifest](evidence/index-manifest.json) / [progress manifest](evidence/progress-manifest.json). Both raw [index](evidence/index-capture.log) and [progress](evidence/progress-capture.log) logs record exit 0, exact source and file URLs. Original manifest paths are retained verbatim: progress desktop.png/mobile.png map to packaged progress-desktop.png/progress-mobile.png. The raw capture evidence labels its producer as reviewer; that is the capture actor, distinct from this fresh independent reviewer.
+
+## Scope, blast radius and retained risks
+
+The production delta is exactly one list item at index.html:150. Removing it restores the baseline index byte for byte. The semantic regression was run here and passes; exact relative progress.html resolves to the unchanged local page. Test bytes are identical at test-only RED, GREEN and reviewed source. Actual retained RED shows the intended missing-link assertion, GREEN passes; neither is a canonical replay. Search assets, stylesheet and progress content remain unchanged. Source/capture audit proves the capture worktree HEAD and all tracked non-evidence bytes match this reviewed source.
+
+RISK_FLAG is YES: index images show the existing lesson-list fetch fallback under file://, and no retained click-through or search interaction was recorded. assets/home.js:136 fetches the manifest and :158 supplies that fallback. This does not show a new source defect from the added anchor. Static link resolution and separate rendered destination captures support the scoped navigation verdict; they do not prove HTTP hosting or fully loaded lesson/search behavior. Only the supplied viewports were inspected.
+
+The original locally served capture requirement was not met: these are authorized lead-produced file:// captures accepted for this fresh review under Piotr's explicit instruction. Prior sandbox server/browser failures and [prior REJECT](evidence/historical-verifier-review.txt) remain historical, unchanged; [server failure](evidence/historical-server-start-attempt.log) and [browser failure](evidence/historical-index-capture-attempt.log) are retained. No retries were made here.
+
+Canonical/environment/human engine acceptance receipts, task-wide invocation-gap resolution (historical missing swarm), publication, hosted final-head CI and human merge remain pending. No claim of engine acceptance, human signoff, CI success, push or merge is made. The final configured 130-test run and search_index --check must bind to the final clean evidence-only delivery in the external report, rather than being confused with the builder's older dirty receipt below.
+
+## Original builder handoff (historical, preserved verbatim)
+
 # REL13 builder evidence
 
 Builder source ready; independent browser capture/review and parent acceptance remain pending. This is not lead-task accepted DONE.
