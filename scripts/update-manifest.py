@@ -2,7 +2,9 @@
 """Regenerate lessons/manifest.json entries from lesson HTML files (published only)."""
 from __future__ import annotations
 
+import argparse
 import json
+import sys
 import re
 from pathlib import Path
 
@@ -53,7 +55,7 @@ def title_from_html(path: Path) -> str:
     return m.group(1).replace("&amp;", "&").replace("&#39;", "'")
 
 
-def main() -> None:
+def build_manifest() -> dict:
     existing: dict[int, dict] = {}
     if MANIFEST.exists():
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -71,12 +73,51 @@ def main() -> None:
         meta["checkpoint"] = meta["checkpoint"] or bool(prev.get("checkpoint", False))
         lessons.append(meta)
 
+    return {"version": 1, "lessons": lessons}
+
+
+def parsed_content_equal(current: object, expected: object) -> bool:
+    """Compare JSON recursively, keeping booleans distinct from numbers."""
+    if isinstance(current, bool) or isinstance(expected, bool):
+        return type(current) is type(expected) and current == expected
+    if isinstance(current, dict) and isinstance(expected, dict):
+        return current.keys() == expected.keys() and all(
+            parsed_content_equal(current[key], expected[key]) for key in current
+        )
+    if isinstance(current, list) and isinstance(expected, list):
+        return len(current) == len(expected) and all(
+            parsed_content_equal(left, right) for left, right in zip(current, expected)
+        )
+    return current == expected
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true",
+                        help="check parsed manifest content without writing files")
+    args = parser.parse_args()
+    if args.check:
+        try:
+            current = json.loads(MANIFEST.read_text(encoding="utf-8"))
+            expected = build_manifest()
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            print(f"Manifest check failed: {MANIFEST}: {exc}", file=sys.stderr)
+            return 1
+        if not parsed_content_equal(current, expected):
+            print(f"Manifest is stale: {MANIFEST}; run without --check to regenerate.",
+                  file=sys.stderr)
+            return 1
+        print(f"Manifest is current: {MANIFEST}")
+        return 0
+
+    manifest = build_manifest()
     MANIFEST.write_text(
-        json.dumps({"version": 1, "lessons": lessons}, indent=2) + "\n",
+        json.dumps(manifest, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"Wrote {len(lessons)} entries to {MANIFEST}")
+    print(f"Wrote {len(manifest['lessons'])} entries to {MANIFEST}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
