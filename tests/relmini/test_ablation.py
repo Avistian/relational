@@ -36,3 +36,15 @@ class ConstructorFeatures(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ConstructorGuard(unittest.TestCase):
+    def test_guard_rejects_constructor_and_assignment_at_or_after_label(self):
+        date = pd.Timestamp('2000-01-03')
+        for column in ('constructor_cutoff', 'constructor_assignment_cutoff'):
+            for delta in (0, 1):
+                f = pd.DataFrame({'date': [date], 'feature_cutoff': [date - pd.Timedelta(days=2)],
+                                  column: [date + pd.Timedelta(days=delta)]})
+                with self.subTest(column=column, delta=delta):
+                    with self.assertRaisesRegex(AssertionError, 'leakage'):
+                        baseline.assert_no_leakage(f)
