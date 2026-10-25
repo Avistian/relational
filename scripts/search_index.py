@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-"""Regenerate assets/search-index.json: one entry per lessons/*.html.
+"""Regenerate the classic-script assets/search-index.js for file:// and HTTP.
 
-Entry: {url, title, headings (h2/h3 text), glossary (terms linked/defined for
-that lesson in reference/glossary.html, where determinable)}.
-Deterministic: sorted by url, fixed JSON formatting, no timestamps.
-`--check` exits 1 if the committed JSON (or the copy embedded in index.html,
-which lets the search box work over file://) differs from a fresh build.
+Entries contain url, title, headings and glossary terms. Output is deterministic.
+`--check` exits 1 for a missing/stale asset or invalid home-page wiring.
+Explicit --out *.json retains the legacy JSON export interface.
 """
 import argparse
 import html
@@ -15,17 +13,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = ROOT / "assets" / "search-index.json"
+DEFAULT_OUT = ROOT / "assets" / "search-index.js"
 DEFAULT_HTML = ROOT / "index.html"
-EMBED_RE = re.compile(r'(<script type="application/json" id="lesson-search-data">)(.*?)(</script>)', re.S)
 
 
-def embed(page_text, index_json):
-    """Return page_text with the compact index embedded (works over file://)."""
-    compact = json.dumps(json.loads(index_json), ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    if not EMBED_RE.search(page_text):
-        raise SystemExit("index.html has no lesson-search-data script block")
-    return EMBED_RE.sub(lambda m: m.group(1) + compact + m.group(3), page_text, count=1)
+def script_asset(index_json):
+    """A classic script needs neither fetch nor a module server for file://."""
+    compact = json.dumps(json.loads(index_json), ensure_ascii=False, separators=(",", ":"))
+    return "var LessonSearchIndex = " + compact.replace("</", "<\\/") + ";\n"
 
 
 def clean(fragment):
@@ -88,30 +83,33 @@ def build(root=ROOT):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--check", action="store_true", help="exit 1 if the JSON file is stale")
+    ap.add_argument("--check", action="store_true", help="exit 1 if the generated asset is missing or stale")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--html", type=Path, default=None,
-                    help="page holding the embedded copy (default index.html when --out is the default)")
+                    help="page loading the asset (default index.html when --out is the default)")
     args = ap.parse_args(argv)
     if args.html is None and args.out == DEFAULT_OUT:
         args.html = DEFAULT_HTML
     fresh = build()
-    page = None
+    if args.out.suffix == ".js":
+        fresh = script_asset(fresh)
     if args.html is not None:
-        page = embed(args.html.read_text(encoding="utf-8"), fresh)
+        page = args.html.read_text(encoding="utf-8")
+        data_tag = '<script src="assets/search-index.js"></script>'
+        search_tag = '<script src="assets/search.js"></script>'
+        if (data_tag not in page or search_tag not in page
+                or page.index(data_tag) > page.index(search_tag)
+                or 'id="lesson-search-data"' in page):
+            print("STALE: search script wiring in %s" % args.html, file=sys.stderr)
+            return 1
     if args.check:
         have = args.out.read_bytes() if args.out.exists() else None
         if have != fresh.encode("utf-8"):
             print("STALE: %s differs from a fresh build; run scripts/search_index.py" % args.out, file=sys.stderr)
             return 1
-        if page is not None and args.html.read_text(encoding="utf-8") != page:
-            print("STALE: embedded index in %s; run scripts/search_index.py" % args.html, file=sys.stderr)
-            return 1
         print("search index up to date")
         return 0
     args.out.write_bytes(fresh.encode("utf-8"))
-    if page is not None:
-        args.html.write_text(page, encoding="utf-8")
     print("wrote %s" % args.out)
     return 0
 
