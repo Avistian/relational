@@ -84,9 +84,12 @@ def build_features(task, results, drivers, constructor_results=None):
 
 
 def assert_no_leakage(feats):
-    has = feats["feature_cutoff"].notna()
-    bad = int((feats.loc[has, "feature_cutoff"] >= feats.loc[has, "date"]).sum())
-    assert bad == 0, f"leakage: {bad} rows use data at/after the task timestamp"
+    for column in ("feature_cutoff", "constructor_assignment_cutoff", "constructor_cutoff"):
+        if column not in feats:
+            continue
+        has = feats[column].notna()
+        bad = int((feats.loc[has, column] >= feats.loc[has, "date"]).sum())
+        assert bad == 0, f"leakage: {bad} rows use data at/after the task timestamp ({column})"
 
 
 def auroc(y, p):
