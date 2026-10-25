@@ -57,6 +57,8 @@ const context = {document: {
 context.window = context;
 vm.createContext(context);
 for (const script of SCRIPTS) vm.runInContext(script, context);
+if (!Array.isArray(context.LessonSearchIndex) || context.LessonSearchIndex.length < 100)
+  throw Error('external script must expose the full lesson index');
 box.value = 'single-table assumption';
 box.input();
 if (!out.children.some(li => li.children.some(a =>
