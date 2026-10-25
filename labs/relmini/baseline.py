@@ -90,6 +90,8 @@ def build_features(task, results, drivers, constructor_results=None):
 
 
 def assert_no_leakage(feats):
+    if "feature_cutoff" not in feats:
+        raise ValueError("feature_cutoff is required to audit leakage")
     for column in ("feature_cutoff", "constructor_assignment_cutoff", "constructor_cutoff"):
         if column not in feats:
             continue
