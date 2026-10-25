@@ -21,6 +21,8 @@ def run(*, cache=baseline.CACHE, output, smoke=False):
     started = time.monotonic()
     cache, output = Path(cache), Path(output)
     output.mkdir(parents=True, exist_ok=True)
+    if any(output.iterdir()):
+        raise FileExistsError(f"output must be empty to preserve evidence: {output}")
     receipt = {'status': 'NOT_RUN', 'seed': 0, 'note': NOTE, 'usd': 0,
                'mode': 'tiny cached smoke' if smoke else 'full cached pair',
                'actor': os.environ.get('LEAD_ACTOR', 'local caller'),
