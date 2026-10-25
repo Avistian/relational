@@ -10,6 +10,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from .retained_reviews import ORIGINAL_REVIEW_PATHS
+
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = {
     'course_fallbacks': ('course-visual-quality-2026-10-07', ''),
@@ -97,7 +99,7 @@ class OutputPathsTests(unittest.TestCase):
         for path in ('reviews/rel15-fixture/new.png', '.scratch/rel15-fixture/new.json'):
             result = subprocess.run(['git', 'check-ignore', '--no-index', path], cwd=ROOT, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr or path)
-        baseline = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', '503704f', '--', 'reviews'], cwd=ROOT, text=True).splitlines()
+        baseline = ORIGINAL_REVIEW_PATHS
         tracked = set(subprocess.check_output(['git', 'ls-files', 'reviews'], cwd=ROOT, text=True).splitlines())
         self.assertTrue(set(baseline).issubset(tracked))
         self.assertTrue(all((ROOT / path).is_file() for path in baseline if path.endswith('.png')))
