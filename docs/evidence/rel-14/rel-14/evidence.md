@@ -1,73 +1,85 @@
-# REL14 builder evidence
+# REL14 fresh evidence review
 
-Software implementation ready for a separate verifier. Feature acceptance is
-PENDING browser proof and independent review. Actor `builder:rel-14`; actual
-pane `w1:p5X`. Inherited `LEAD_SELF_PANE=w1:p1` identifies the lead, not this
-builder pane. Worktree `/tmp/lead-wt/build-rel14-20261025`.
+Reviewed screenshot source: `67bf8c68d34e7cb33684570633915935cce5cb4e`.
+Software implementation: `341875ebcad870ffec05b31b1893b01677ba923e`.
+Builder: `builder:rel-14`; capture producer: `lead:rel-14-capture`;
+independent actual reviewer: `verifier:rel-14-captured`, this fresh separate session.
+The producer records lead tip `a3dbf76` and explicit Piotr outside-sandbox capture
+authority, using the installed headless shell and Playwright. This reviewer
+inspected the resulting files and ran software audits; no browser rerun occurred.
 
-REL13 base: `edebddae007db2ab6e956e9fa824bb9c5ce18fd8`.
-Tests-only RED: `575b49b9bd335ce1bb64205ff6db8b5c0b22c4c9`.
-Verified software source: `341875ebcad870ffec05b31b1893b01677ba923e`.
-Later delivery commits contain evidence only. Final clean-delivery verification
-will be retained under the external lead verification root and identified in
-the builder handoff, avoiding a self-referential repository SHA.
+Recommendation: **ACCEPT for Piotr**, with `RISK_FLAG: YES` for the preserved
+historical missing sharpen invocation. No concrete introduced source defect found.
+This is not engine acceptance or a waiver. Parent handles receipts, scoped waiver
+if warranted, PR, hosted CI and merge. Hosted CI: NOT_RUN by this review.
 
-## Change and interface
+## Actual search captures
 
-Home loads generated classic script `assets/search-index.js` before
-`assets/search.js`. The data interface is `LessonSearchIndex`, an array consumed
-by the existing search handler. Ordered blocking local scripts need no fetch,
-modules, or full inline fallback. Missing/invalid data produces the existing
-"Search index unavailable." message. Actual file:// and HTTP browser proof is
-still pending.
+All four exact PNGs were opened with the image tool. Each visibly shows the input
+`baseline` and first lesson result links. Desktop is 1280x900; mobile is 390x900.
+Mobile links wrap readably without visible horizontal clipping. The viewport
+shows part of the results; the capture's DOM record, not the pixels alone, proves
+19 results in each case. Text, href and ordering match the real search module;
+all 19 relative lesson targets exist.
 
-Home is **8262 bytes**, down from 169499; below 20000. Inline CSS matches REL13
-byte for byte. Course progress link is preserved. Search ranking/rendering and
-`assets/search.js` remain unchanged. No required edits outside ownership were
-found. Unowned historical `assets/search-index.json` remains untouched and is
-unused by home; explicit `--out *.json` preserves the legacy JSON export.
-The default generator and existing CI check validate the JS asset.
-
-## Actual software proof
-
-- `/tdd`: canonical frozen standalone regression RED/GREEN passed. RED has one
-  assertion failure; GREEN passes without errors/skips. See [tdd.md](tdd.md),
-  [RED](canonical-red.log), [GREEN](canonical-green.log) and the retained receipt.
-- `/verify-project`: `bin/lead-verify relational --worktree
-  /tmp/lead-wt/build-rel14-20261025` PASS, exit 0, dirty false, source
-  `341875ebcad870ffec05b31b1893b01677ba923e`; 133 tests passed. Read
-  [status](software-status.json), [stderr](software-stderr.txt) and
-  [stdout](software-stdout.txt).
-- `python3 scripts/search_index.py --check`: exit 0.
-- `python3 -m unittest discover -s tests/search -v`: 22 tests pass, including
-  lesson coverage, title/headings/glossary, ranking, multiword AND, case and
-  diacritics, deterministic output, legacy JSON export and page wiring.
-- Isolated default-path generator copy, using real lesson/glossary inputs:
-  fresh asset exit 0; stale empty asset exit 1; missing asset exit 1 without
-  recreating it. Production files were untouched by these counterexamples.
-- [Focused log](focused-software.log) retains exact commands, exits, diagnostics,
-  size, stylesheet comparison and selected-test digest.
-
-The Node VM DOM adapter executes actual page scripts and input handler, checking
-that "single-table assumption" produces a lesson link. This supplies software
-proof, not Chrome interactions, captures, or URL-scheme proof.
-
-## Pending independent proof
-
-| Scheme | Width | Known-term interaction | Real screenshot |
+| Scheme | Desktop | Mobile | DOM results |
 | --- | --- | --- | --- |
-| file:// | 1280 | NOT_RUN | PENDING |
-| file:// | 390 | NOT_RUN | PENDING |
-| HTTP | 1280 | NOT_RUN | PENDING |
-| HTTP | 390 | NOT_RUN | PENDING |
+| file:// | [actual search PNG](external-capture/file-desktop-search.png) | [actual search PNG](external-capture/file-mobile-search.png) | 19 each |
+| HTTP | [actual search PNG](external-capture/http-desktop-search.png) | [actual search PNG](external-capture/http-mobile-search.png) | 19 each |
 
-Lead must launch the separate read-only verifier for actual interactions, four
-screenshots and `/blast-radius`. No builder browser capture or independent
-review is claimed. Hosted CI is NOT_RUN. No subagents/workers were spawned;
-no push, PR creation, merge, installs, downloads, spend or permission changes.
+[Capture result](external-capture/capture-result.json) retains source, identity,
+authority, browser version/path, input, result text/hrefs/count, timestamps,
+viewport, PNG SHA256, HTTP logs, pageerrors and failed_requests. The four recorded
+interaction arrays are empty and the retained HTTP requests are 200. This does
+not assert a globally error-free console/network or test clicking every link.
+HTTP shows the existing Continue banner; file views do not. Unchanged
+`assets/home.js` loads its independent navigation via fetch with a catch fallback;
+search uses local classic scripts. File search success is not full navigation
+parity. Raw [file manifest](external-capture/file-lead-evidence/manifest.json),
+[file capture log](external-capture/file-lead-evidence/capture.log),
+[HTTP manifest](external-capture/http-lead-evidence/manifest.json) and
+[HTTP capture log](external-capture/http-lead-evidence/capture.log) are preserved.
+Their desktop/mobile PNGs are pre-interaction captures, distinct from the four
+search-result PNGs above. Manifest field `reviewer` names the lead producer;
+it does not identify this independent reviewer.
 
-Initial `lead-task check-skills rel-14` returned `SKILLS FAIL: missing
-skills-used.jsonl`. Existing intake artifacts do not prove invocation. Builder
-records cover only actual builder TDD and verification; intake and independent
-review records remain the lead's responsibility. No task engine acceptance or
-DONE claim is made.
+## Independent source and blast-radius proof
+
+Fresh [source audit](fresh-review/source-audit.log) passes: index is 8262 bytes;
+228 external entries equal the previous embedded data; inline CSS, search module
+and rest of the home page match the REL13 base apart from the specified script
+and initialization changes. Course progress link and target survive. Entire tests
+tree is frozen RED to GREEN; canonical receipt/report/log hashes and builder proof
+hashes match. No new canonical replay or TDD invocation took place.
+
+22 search tests pass, including coverage, title/headings/glossary, ranking,
+multiword AND, diacritics, legacy export, deterministic output and the actual
+page input handler under Node. Freshness passes. Isolated real-input copies
+return 1 on stale/missing asset and broken wiring without writing or recreating
+files; fresh default returns 0. [Capture audit](fresh-review/capture-audit.log)
+checks dimensions and hashes of all search PNGs plus the raw lead-evidence PNGs,
+recorded input/results/errors, and equality with the actual search module.
+The audit script is evidence code, not an implementation or test-suite edit.
+
+The key safety fact is proven by running real code: externalizing the complete
+index preserves search data and behavior, with ordered classic scripts. The
+existing PR workflow calls `scripts/search_index.py --check`, now checking the
+JS default. Unused historical JSON is retained. The extra local script introduces
+one required file to publish together with the home page; missing data is handled
+by the existing unavailable message. Source correctness plus the four captures
+clear that risk for the reviewed local bytes; hosted deployment remains untested.
+
+Final delivery adds evidence only to screenshot source `67bf8c68...`. The exact
+final SHA and fresh configured 133-test clean-delivery status, stdout/stderr,
+search --check and clean-tree evidence are retained in the external fresh-verifier
+accept directory. They are generated after this packaging commit to avoid a
+self-referential commit. The old root READY.json is historical builder metadata,
+not the fresh final-delivery verdict.
+
+## Preserved history
+
+[Prior verifier report](prior-verifier/source-pass-browser-pending.md) retains
+SOURCE PASS / browser PENDING, unchanged, with its raw proof and prior-ready.json.
+[Original builder narrative](builder-evidence-historical.md), canonical RED/GREEN,
+receipt and report remain intact. Historical missing `sharpen` invocation was not
+backfilled, retried or waived. This review does not manufacture invocation records.
